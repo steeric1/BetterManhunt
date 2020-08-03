@@ -133,10 +133,10 @@ public class PlayerTracking implements Listener {
 				StringBuilder sb = new StringBuilder();
 				
 				if (target == null) {
-					sb.append("�cNo runners found!");
+					sb.append("§cNo runners found!");
 				} else {
-					if (target.player != null) sb.append("�r�6Tracking to: �o").append(target.player.getName());
-					if (target.distance >= 0) sb.append("�r�6 | Distance: �o").append(target.distance).append(" blocks");
+					if (target.player != null) sb.append("§r§6Tracking to: §o").append(target.player.getName());
+					if (target.distance >= 0) sb.append("§r§6 | Distance: §o").append(target.distance).append(" blocks");
 				}
 				
 				String text = sb.toString();
