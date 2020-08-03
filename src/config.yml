@@ -1,0 +1,54 @@
+# BetterManhunt plugin configuration file
+
+# =======================================================================
+
+# Configuration for recognizing worlds where manhunt games can be played
+
+name-pattern: 'world'
+
+# Possible values for key name-pattern-mode: regex, prefix
+# If on regex, world names will be recognized by a regular expression
+# If on prefix, world names will be recognized by a prefix in the world name
+
+name-pattern-mode: prefix 
+
+# =======================================================================
+
+# Boolean (true/false) value for determining if players with OP or with the permission 'bettermanhunt.createnewworld' can create new worlds.
+# Creating new worlds can be a heavy operation, hence setting this value to 'false' is recommended in case the server is not very powerful.
+
+create-new-world: true
+
+# =======================================================================
+
+# THIS SECTION OF THE CONFIGURATION FILE IS UNIMPLEMENTED ON THE CODE SIDE, SO IT DOES NOT HAVE AN EFFECT
+
+# Colors of the messages to players
+# List of all colors and styles can be found at 'https://hub.spigotmc.org/javadocs/spigot/org/bukkit/ChatColor.html'
+# If you want to combine colors and styles, use a plus sign between the format values (e.g. 'AQUA + BOLD')
+# (two or more different colors can't be combined)
+
+color:
+  normal-text: 'AQUA'
+  highlight: 'WHITE'
+  error: 'RED'
+
+# =======================================================================
+
+# Configuration for the player trackers
+# Trackers, by default, show only direction
+# Set one or both of the following values to true to show player and/or distance
+# on mouse right click while tracker in hand
+
+trackers-show-distance: true
+trackers-show-player: true
+  
+# =======================================================================
+
+# Miscellaneous
+
+attack-own-team: true  
+  
+  
+  
+  

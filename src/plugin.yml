@@ -1,0 +1,28 @@
+name: 'BetterManhunt'
+main: me.steeric.manhunt.Manhunt
+version: '1.0.0'
+author: Steeric
+api-version: 1.13
+
+commands: 
+  manhunt: 
+    usage: 'Usage: /manhunt <create|delete|join|start> <game> or /manhunt <list>'
+  newworld: 
+    description: Chooses the option to create new world upon game creation.
+  findworld: 
+    description: Chooses the option to find a world upon game creation.
+  thisworld: 
+    description: Chooses the option to use the current world upon game creation.
+  teamrunners: 
+    description: Join the runners.
+  teamhunters: 
+    description: Join the hunters.
+  quitgame: 
+    description: Quits game.
+  headstart: 
+    description: Sets speedrunner headstart (in seconds).
+    usage: 'Usage: /headstart <seconds>'
+  toall: 
+    description: Toggles chat mode to public chat.
+  toteam: 
+    description: Toggles chat mode to team chat.
