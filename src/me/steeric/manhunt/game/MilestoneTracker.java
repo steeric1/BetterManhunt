@@ -184,8 +184,11 @@ public class MilestoneTracker implements Listener {
 	
 	@EventHandler
 	public void onBucketFill(PlayerBucketFillEvent event) {
+
+		ItemStack item = event.getItemStack();
+		if (item == null) return;
 		
-		if (event.getItemStack().getType() != Material.LAVA_BUCKET) return;
+		if (item.getType() != Material.LAVA_BUCKET) return;
 		
 		Player player = event.getPlayer();
 		Game game = GameManager.inGame(player);
@@ -251,8 +254,11 @@ public class MilestoneTracker implements Listener {
 		Action action = event.getAction();
 		
 		if (action == Action.RIGHT_CLICK_AIR) {
+
+			ItemStack item = event.getItem();
+			if (item == null) return;
 			
-			Material itemType = event.getItem().getType();
+			Material itemType = item.getType();
 			Manhunter mhplayer = game.findPlayer(player);
 			
 			if (itemType == Material.ENDER_EYE) awardMilestone(mhplayer, Milestone.THROW_ENDER_EYE, game);
@@ -324,7 +330,11 @@ public class MilestoneTracker implements Listener {
 	}
 	
 	private static boolean isInFortress(Location location) {
-		Location structureLoc = location.getWorld().locateNearestStructure(location, StructureType.NETHER_FORTRESS, 100, false);
+
+		World world = location.getWorld();
+		if (world == null) return false;
+
+		Location structureLoc = world.locateNearestStructure(location, StructureType.NETHER_FORTRESS, 100, false);
 		return structureLoc != null && structureLoc.distanceSquared(location) <= Math.pow(120, 2);
 	}
 	

@@ -47,7 +47,11 @@ public class GameManager {
 				
 		for (Manhunter mh : game.getPlayers()) {
 			mh.restoreData();
-			Bukkit.getPlayer(mh.getPlayer()).sendMessage(AQUA + "Teleporting you to your location before the game started!");
+
+			Player playerHandle = Bukkit.getPlayer(mh.getPlayer());
+			if (playerHandle != null)
+				playerHandle.sendMessage(AQUA + "Teleporting you to your location before the game started!");
+
 		}
 		
 		if (game.hasCreatedWorlds()) WorldManager.deleteGameWorlds(game);
@@ -65,15 +69,6 @@ public class GameManager {
 		return null;
 	}
 	
-	public static PreGame findPreGame(String name) {
-		
-		for (PreGame s : preGames) {
-			if (s.getName().equals(name)) return s;
-		}
-		
-		return null;
-	}
-	
 	public static PreJoin findPreJoin(UUID player) {
 		
 		for (Game game : games) {
@@ -85,42 +80,28 @@ public class GameManager {
 		return null;
 	}
 	
-	public static String startGame(Game game, Player player) {
-		
+	public static String startGame(Game game) {
 		game.start();
-		
 		return ChatColor.AQUA + "Game started!";
-		
 	}
 	
-	public static String getGamePostFix(Game game) {
-		
-		for (int i = 0; i < games.size(); i++) {
-			if (games.get(i).getName().equals(game.getName())) return String.valueOf(i);
-		}
-		
-		return null;
-		
-	}
-	
-	public static String joinGame(Player player, PlayerType type, String name) {
+	public static void joinGame(Player player, PlayerType type, String name) {
 		
 		Game game = findGame(name);
 				
 		// used whether player tries to join a game they have previously joined
 		// by the click event in the message
 		// ManhuntCommand.onCommand handles joins by command /manhunt join
+
+		if (game == null) return;
 		
-		if (game == null) return null;
-		
-		if (!game.addPlayer(player, type)) return ChatColor.RED + "You have already joined that game!";
+		if (!game.addPlayer(player, type)) return;
 		
 		game.getPreJoins().remove(new PreJoin(player.getUniqueId(), game));
-		
-		if (!player.equals(Bukkit.getPlayer(game.getAdmin())))
-			Bukkit.getPlayer(game.getAdmin()).sendMessage(ChatColor.WHITE + player.getName() + ChatColor.AQUA + " [" + type.toString().substring(0, 1).toUpperCase() + "] joined your game!");
-		
-		return ChatColor.AQUA + "Succesfully joined game!\nYou are now a " + type + "!";
+
+		Player adminHandle = Bukkit.getPlayer(game.getAdmin());
+		if (adminHandle != null && !player.equals(adminHandle))
+			adminHandle.sendMessage(ChatColor.WHITE + player.getName() + ChatColor.AQUA + " [" + type.toString().substring(0, 1).toUpperCase() + "] joined your game!");
 	}
 	
 	public static boolean hasJoined(Player player, Game game) { // used by ManhuntCommand.onCommand to check if player has already joined a game
@@ -162,9 +143,9 @@ public class GameManager {
 		ArrayList<Manhunter> players = game.getPlayers();
 		
 		if (type == PlayerType.RUNNER) {
-			
-			for (int i = 0; i < runners.size(); i++) {
-				if (runners.get(i).getPlayer().equals(player.getUniqueId())) {
+
+			for (Manhunter runner : runners) {
+				if (runner.getPlayer().equals(player.getUniqueId())) {
 					return RED + "You already are a runner!";
 				}
 			}
@@ -195,9 +176,9 @@ public class GameManager {
 			
 			
 		} else {
-			
-			for (int i = 0; i < hunters.size(); i++) {
-				if (hunters.get(i).getPlayer().equals(player.getUniqueId())) {
+
+			for (Manhunter hunter : hunters) {
+				if (hunter.getPlayer().equals(player.getUniqueId())) {
 					return RED + "You already are a hunter!";
 				}
 			}

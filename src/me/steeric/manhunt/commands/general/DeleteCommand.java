@@ -27,7 +27,7 @@ public class DeleteCommand implements GeneralCommand {
 			return true;
 		}
 		
-		if (!game.isHeadStartOver() && game.getState() == GameState.RUNNING) {
+		if (game.headStartNotOver() && game.getState() == GameState.RUNNING) {
 			player.sendMessage(RED + "You can't delete this game right now!");
 			return true;
 		}

@@ -34,7 +34,7 @@ public class StartCommand implements GeneralCommand {
 			return true;
 		}
 		
-		String message = GameManager.startGame(game, player);
+		String message = GameManager.startGame(game);
 		player.sendMessage(message);
 	
 		return true;

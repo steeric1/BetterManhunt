@@ -7,7 +7,7 @@ import me.steeric.manhunt.managing.WorldManager;
 
 public class WorldSet {
 	
-	public World[] worlds = new World[3];
+	public World[] worlds;
 	public String baseName;
 	
 	public WorldSet(String baseName, boolean createWorlds) {

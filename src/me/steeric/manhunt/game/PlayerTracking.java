@@ -29,38 +29,46 @@ public class PlayerTracking implements Listener {
 	
 	private static final String TRACKER_NAME = ChatColor.GOLD + "Player Tracker";
 	private static final String TRACKER_LORE = "Tracking to closest runner...";
-	private static boolean showPlayer = Manhunt.config.getBoolean("trackers-show-player");
-	private static boolean showDistance = Manhunt.config.getBoolean("trackers-show-distance");
+	private static final boolean showPlayer = Manhunt.config.getBoolean("trackers-show-player");
+	private static final boolean showDistance = Manhunt.config.getBoolean("trackers-show-distance");
 	
 	public static Location findClosestRunner(Location location, Game game) {
 		
 		List<Manhunter> runners = game.getRunners();
 		List<Manhunter> runnersInSameWorld = new ArrayList<>();
-		
-		for (int i = 0; i < runners.size(); i++) {
-			
-			Player player = Bukkit.getPlayer(runners.get(i).getPlayer());
-			if (player.getGameMode() == GameMode.SPECTATOR) continue;
-			
-			if (player.getWorld().equals(location.getWorld())) {
-				runnersInSameWorld.add(runners.get(i));
+
+		for (Manhunter runner : runners) {
+
+			Player player = Bukkit.getPlayer(runner.getPlayer());
+			if (player != null) {
+
+				if (player.getGameMode() == GameMode.SPECTATOR) continue;
+
+				if (player.getWorld().equals(location.getWorld())) {
+					runnersInSameWorld.add(runner);
+				}
 			}
 		}
 		
 		if (runnersInSameWorld.size() == 0) return null;
-		
-		
-		Location closest = Bukkit.getPlayer(runnersInSameWorld.get(0).getPlayer()).getLocation();
+
+		Player closestPlayer = null;
+		int index = 0;
+		while (closestPlayer == null)
+			closestPlayer = Bukkit.getPlayer(runnersInSameWorld.get(index++).getPlayer());
+
+		Location closest = closestPlayer.getLocation();
 		double distance;
-		for (int i = 1; i < runnersInSameWorld.size(); i++) {
+		for (int i = index + 1; i < runnersInSameWorld.size(); i++) {
 			
 			Player player = Bukkit.getPlayer(runnersInSameWorld.get(i).getPlayer());
-					
-			Location playerLocation = player.getLocation();
-			distance = location.distanceSquared(playerLocation);
-			
-			if (distance < location.distanceSquared(closest)) {
-				closest = playerLocation;
+			if (player != null) {
+				Location playerLocation = player.getLocation();
+				distance = location.distanceSquared(playerLocation);
+
+				if (distance < location.distanceSquared(closest)) {
+					closest = playerLocation;
+				}
 			}
 		}
 		
@@ -71,6 +79,7 @@ public class PlayerTracking implements Listener {
 		
 		ItemStack item = new ItemStack(Material.COMPASS);
 		ItemMeta meta = item.getItemMeta();
+		if (meta == null) return null;
 		
 		meta.setDisplayName(TRACKER_NAME);
 		
@@ -86,10 +95,14 @@ public class PlayerTracking implements Listener {
 	}
 	
 	public static boolean isTracker(ItemStack item) {
-		
-		return item.getType() == Material.COMPASS && item.getItemMeta().getDisplayName().equals(TRACKER_NAME) &&
-				item.getItemMeta().getLore().get(0).equals(TRACKER_LORE);
-		
+
+		ItemMeta meta = item.getItemMeta();
+		if (meta == null) return false;
+
+		List<String> lore = meta.getLore();
+		if (lore == null) return false;
+
+		return item.getType() == Material.COMPASS && meta.getDisplayName().equals(TRACKER_NAME) && lore.get(0).equals(TRACKER_LORE);
 	}
 	
 	@EventHandler
@@ -110,7 +123,7 @@ public class PlayerTracking implements Listener {
 		if (action == Action.RIGHT_CLICK_AIR) {
 			
 			ItemStack item = event.getItem();
-			if (!isTracker(item)) return;
+			if (item == null || !isTracker(item)) return;
 			
 			Material itemType = item.getType();
 
@@ -120,10 +133,10 @@ public class PlayerTracking implements Listener {
 				StringBuilder sb = new StringBuilder();
 				
 				if (target == null) {
-					sb.append("§cNo runners found!");
+					sb.append("ï¿½cNo runners found!");
 				} else {
-					if (target.player != null) sb.append("§r§6Tracking to: §o" + target.player.getName());
-					if (target.distance >= 0) sb.append("§r§6 | Distance: §o" + target.distance + " blocks");
+					if (target.player != null) sb.append("ï¿½rï¿½6Tracking to: ï¿½o").append(target.player.getName());
+					if (target.distance >= 0) sb.append("ï¿½rï¿½6 | Distance: ï¿½o").append(target.distance).append(" blocks");
 				}
 				
 				String text = sb.toString();
@@ -140,30 +153,37 @@ public class PlayerTracking implements Listener {
 		
 		List<Manhunter> runners = game.getRunners();
 		List<Manhunter> runnersInSameWorld = new ArrayList<>();
-		
-		for (int i = 0; i < runners.size(); i++) {
-			
-			Player player = Bukkit.getPlayer(runners.get(i).getPlayer());
-			if (player.getGameMode() == GameMode.SPECTATOR) continue;
-			
-			if (player.getWorld().equals(location.getWorld())) {
-				runnersInSameWorld.add(runners.get(i));
+
+		for (Manhunter runner : runners) {
+
+			Player playerHandle = Bukkit.getPlayer(runner.getPlayer());
+			if (playerHandle != null) {
+				if (playerHandle.getGameMode() == GameMode.SPECTATOR) continue;
+
+				if (playerHandle.getWorld().equals(location.getWorld())) {
+					runnersInSameWorld.add(runner);
+				}
 			}
 		}
 		
 		if (runnersInSameWorld.size() == 0) return null;
 		
-		Player closest = Bukkit.getPlayer(runnersInSameWorld.get(0).getPlayer());
+		Player closest = null;
+		int index = 0;
+		while (closest == null)
+			closest = Bukkit.getPlayer(runnersInSameWorld.get(index++).getPlayer());
+
 		double distance;
-		for (int i = 1; i < runnersInSameWorld.size(); i++) {
+		for (int i = index + 1; i < runnersInSameWorld.size(); i++) {
 			
-			Player player = Bukkit.getPlayer(runnersInSameWorld.get(i).getPlayer());
-					
-			Location playerLocation = player.getLocation();
-			distance = location.distanceSquared(playerLocation);
-			
-			if (distance < location.distanceSquared(closest.getLocation())) {
-				closest = player;
+			Player playerHandle = Bukkit.getPlayer(runnersInSameWorld.get(i).getPlayer());
+			if (playerHandle != null) {
+				Location playerLocation = playerHandle.getLocation();
+				distance = location.distanceSquared(playerLocation);
+
+				if (distance < location.distanceSquared(closest.getLocation())) {
+					closest = playerHandle;
+				}
 			}
 		}
 		
@@ -185,7 +205,5 @@ public class PlayerTracking implements Listener {
 			this.player = player;
 			this.distance = distance;
 		}
-		
 	}
-	
 }

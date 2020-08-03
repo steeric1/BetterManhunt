@@ -32,10 +32,10 @@ public class HeadStartCommand implements GeneralCommand {
 			return true;
 		}
 		
-		int headstart = -1;
-		
+		int headstart;
+
 		try {
-			headstart = Integer.valueOf(time);
+			headstart = Integer.parseInt(time);
 		} catch (Exception e) {
 			return false;
 		}

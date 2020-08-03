@@ -25,8 +25,6 @@ public class ChatManager implements Listener {
 		String message;
 		event.setCancelled(true);
 
-		// [TEAM] : Steeric [R] > moi
-		
 		message = p.getChatMode() + " : " + player.getName() + ChatColor.GREEN + " [" + p.getType().toString().substring(0, 1).toUpperCase() + "] " + ChatColor.WHITE + "> " + originalMessage;
 		game.notifyTeam(message, p.getType());
 		
@@ -41,7 +39,7 @@ public class ChatManager implements Listener {
 		}
 	}
 	
-	public static enum ChatMode {
+	public enum ChatMode {
 		TO_ALL {
 			@Override
 			public String toString() {

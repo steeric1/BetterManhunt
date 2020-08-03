@@ -4,8 +4,8 @@ import java.util.UUID;
 
 public class PreGame {
 	
-	private UUID creator;
-	private String name;
+	private final UUID creator;
+	private final String name;
 	
 	public PreGame(UUID creator, String name) {
 		this.creator = creator;

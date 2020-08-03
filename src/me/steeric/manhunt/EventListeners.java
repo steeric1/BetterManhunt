@@ -35,7 +35,7 @@ public class EventListeners implements Listener {
 	private final boolean attackTeam;
 	
 	public EventListeners() {
-		attackTeam = Manhunt.config.getBoolean("attack-own-team");
+		this.attackTeam = Manhunt.config.getBoolean("attack-own-team");
 	}
 	
 	@EventHandler
@@ -46,7 +46,7 @@ public class EventListeners implements Listener {
 			Player player = event.getEntity().getKiller();
 			Game game = GameManager.inGame(player);
 			
-			if (game == null) return;
+			if (game == null || player == null) return;
 			
 			if (game.findPlayer(player).getType() == PlayerType.RUNNER && game.getState() == GameState.RUNNING) {
 				game.gameOver(PlayerType.RUNNER);
@@ -159,9 +159,12 @@ public class EventListeners implements Listener {
 		if (game == null) return;
 		
 		if (event.getCause() == PlayerTeleportEvent.TeleportCause.COMMAND) {
+
+			Location to = event.getTo();
+			if (to == null || to.getWorld() == null) return;
 			
-			if (game.getState() == GameState.GAME_OVER && !event.getTo().getWorld().equals(game.getWorlds().worlds[0])
-					&& !event.getTo().getWorld().equals(game.getWorlds().worlds[1]) && !event.getTo().getWorld().equals(game.getWorlds().worlds[2])) {
+			if (game.getState() == GameState.GAME_OVER && !to.getWorld().equals(game.getWorlds().worlds[0])
+					&& !to.getWorld().equals(game.getWorlds().worlds[1]) && !to.getWorld().equals(game.getWorlds().worlds[2])) {
 				
 				Manhunter p = game.findPlayer(player);
 				
@@ -236,13 +239,17 @@ public class EventListeners implements Listener {
 		Game game = GameManager.inGame(event.getPlayer());
 		
 		if (game == null) return;
+
+		Location from = event.getFrom();
+		Location to = event.getTo();
+		if (to == null || to.getWorld() == null || from.getWorld() == null) return;
 		
 		if (event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
-			
-			if (event.getFrom().getWorld().getEnvironment() == Environment.NORMAL) {
-				event.setTo(new Location(game.getWorlds().worlds[1], event.getTo().getX(), event.getTo().getY(), event.getTo().getZ()));
-			} else if (event.getFrom().getWorld().getEnvironment() == Environment.NETHER) {
-				event.setTo(new Location(game.getWorlds().worlds[0], event.getTo().getX(), event.getTo().getY(), event.getTo().getZ()));
+
+			if (from.getWorld().getEnvironment() == Environment.NORMAL) {
+				event.setTo(new Location(game.getWorlds().worlds[1], to.getX(), to.getY(), to.getZ()));
+			} else if (from.getWorld().getEnvironment() == Environment.NETHER) {
+				event.setTo(new Location(game.getWorlds().worlds[0], to.getX(), to.getY(), to.getZ()));
 			}
 			
 		} else if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
@@ -257,7 +264,7 @@ public class EventListeners implements Listener {
 			Location endLocation;
 			if (game.getEndLocation() == null) {
 				WorldManager.vec2d loc = WorldManager.getEndLocation();
-				endLocation = new Location(game.getWorlds().worlds[2], loc.x, event.getTo().getY(), loc.z);
+				endLocation = new Location(game.getWorlds().worlds[2], loc.x, to.getY(), loc.z);
 				game.setEndLocation(endLocation);
 			} else {
 				endLocation = game.getEndLocation();
@@ -285,12 +292,12 @@ public class EventListeners implements Listener {
 		if (mhplayer.getType() == PlayerType.RUNNER && game.getState() == GameState.RUNNING) {
 			
 			ArrayList<Manhunter> hunters = game.getHunters();
-			
-			for (int i = 0; i < hunters.size(); i++) {
-				
-				hunters.get(i).updateTracker();
+
+			for (Manhunter hunter : hunters) {
+				hunter.updateTracker();
 			}
-		} else if (mhplayer.getType() == PlayerType.HUNTER && (!game.isHeadStartOver() || !mhplayer.isAlive()) && game.getState() == GameState.RUNNING) {
+
+		} else if (mhplayer.getType() == PlayerType.HUNTER && (game.headStartNotOver() || !mhplayer.isAlive()) && game.getState() == GameState.RUNNING) {
 			event.setCancelled(true);
 		}
 	}

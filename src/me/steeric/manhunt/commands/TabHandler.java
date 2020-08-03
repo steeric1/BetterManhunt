@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import me.steeric.manhunt.game.Game;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -33,24 +34,20 @@ public class TabHandler implements TabCompleter {
 			if (args.length == 0) return this.manhuntCommands;
 			
 			if (args.length == 1) {
-				
-				List<String> result = this.manhuntCommands.stream()
+
+				return this.manhuntCommands.stream()
 						.filter(str -> str.startsWith(args[0]))
 						.collect(Collectors.toList());
-				
-				return result;
 			}
 
 			if (args.length == 2) {
 				
 				if (args[0].equals("create") || args[0].equals("list")) return new ArrayList<>();
-				
-				List<String> games = GameManager.games.stream()
-						.map(game -> game.getName())
+
+				return GameManager.games.stream()
+						.map(Game::getName)
 						.filter(name -> name.startsWith(args[1]))
 						.collect(Collectors.toList());
-				
-				return games;
 			}
 		}
 		

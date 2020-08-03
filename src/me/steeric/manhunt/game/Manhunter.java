@@ -12,12 +12,12 @@ import me.steeric.manhunt.managing.ChatManager.ChatMode;
 
 public class Manhunter {
 	
-	private PlayerType type;
-	private UUID player;
+	private final PlayerType type;
+	private final UUID player;
 	private PlayerData prevData;
 	private Location compassTargetAtQuit;
-	private Game game;
-	private MilestoneProgress progress;
+	private final Game game;
+	private final MilestoneProgress progress;
 	private ChatMode chatMode;
 	private boolean dataRestored;
 	private boolean alive;
@@ -49,7 +49,12 @@ public class Manhunter {
 	
 	@Override
 	public String toString() {
-		return Bukkit.getPlayer(this.player).getName() + " [" + this.type.toString().substring(0,1).toUpperCase() + "]";
+		Player playerHandle = Bukkit.getPlayer(this.player);
+		if (playerHandle != null) {
+			return playerHandle.getName() + " [" + this.type.toString().substring(0,1).toUpperCase() + "]";
+		} else {
+			return "";
+		}
 	}
 	
 	public void updateTracker() {
@@ -66,10 +71,12 @@ public class Manhunter {
 	
 	public void restoreData() {
 		
-		if (this.prevData == null) return;
-		if (this.dataRestored) return;
-		
-		this.prevData.setDataToPlayer(Bukkit.getServer().getPlayer(this.player));
+		if (this.prevData == null || this.dataRestored) return;
+
+		Player playerHandle = Bukkit.getServer().getPlayer(this.player);
+		if (playerHandle == null) return;
+
+		this.prevData.setDataToPlayer(playerHandle);
 		this.dataRestored = true;
 	}
 	
@@ -78,7 +85,11 @@ public class Manhunter {
 	}
 
 	public void saveData() {
-		this.prevData = new PlayerData(Bukkit.getServer().getPlayer(this.player));
+
+		Player playerHandle = Bukkit.getServer().getPlayer(this.player);
+		if (playerHandle == null) return;
+
+		this.prevData = new PlayerData(playerHandle);
 	}
 	
 	public UUID getPlayer() {
@@ -91,10 +102,6 @@ public class Manhunter {
 
 	public MilestoneProgress getMilestoneProgress() {
 		return progress;
-	}
-
-	public void setMilestoneProgress(MilestoneProgress progress) {
-		this.progress = progress;
 	}
 	
 	public ChatMode getChatMode() {
@@ -116,17 +123,13 @@ public class Manhunter {
 	@Override
 	public boolean equals(Object other) {
 		
-		if (other == null) return false;
 		if (!(other instanceof Manhunter)) return false;
-		
+
 		Manhunter otherPlayer = (Manhunter) other;
-		
-		if (otherPlayer.getPlayer().equals(this.player)) return true;
-		
-		return false;
+		return otherPlayer.getPlayer().equals(this.player);
 	}
 
-	public static enum PlayerType {
+	public enum PlayerType {
 		
 		HUNTER {
 			@Override

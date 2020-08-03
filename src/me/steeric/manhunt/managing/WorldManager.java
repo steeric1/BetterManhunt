@@ -28,35 +28,22 @@ public class WorldManager {
 		if (nether == null) return false;
 		
 		World end = Bukkit.getWorld(baseName + "_the_end");
-		if (end == null) return false;
-		
-		return true;
-
+		return end != null;
 	}
 	
-	private static boolean deleteFolder(File folder) {
+	private static void deleteFolder(File folder) {
 		
-		if (folder.isFile()) return false;
-		
-		boolean allDeleted = true;
+		if (folder.isFile()) return;
 		
 		// delete files
 		File[] files = folder.listFiles();
-		
+		if (files == null) return;
+
 		for (File file : files) {
 			if (file.isDirectory()) {
 				deleteFolder(file);
-			} else if (file.isFile()) {
-				if (!file.delete()) {
-					allDeleted = false;
-				}
 			}
 		}
-		
-		if (!folder.delete()) allDeleted = false;
-		
-		return allDeleted;
-		
 	}
 	
 	public static vec2d getEndLocation() {
@@ -79,30 +66,23 @@ public class WorldManager {
 	
 	public static void deleteWorld(String name) {
 		
-		System.out.println("We must delete world " + name);
-		
 		File folder = Bukkit.getServer().getWorldContainer();
-		
 		if (folder.isFile()) return;
 		
 		int index = -1;
 		File[] files = folder.listFiles();
+		if (files == null) return;
 		
 		for (int i = 0; i < files.length; i++) {
 			if (files[i].getName().equals(name) && files[i].isDirectory()) {
-				System.out.println("We found the world!");
 				index = i;
 				break;
 			}
 		}
 		
 		if (index >= 0) {
-			
-			boolean deleted = deleteFolder(files[index]);
-			
-			System.out.println((deleted ? "Succesfully deleted world!" : "Failed!"));
+			deleteFolder(files[index]);
 		}
-		
 	}
 	
 	public static World[] getWorlds(String baseName) {
@@ -121,6 +101,8 @@ public class WorldManager {
 		
 		String namePatternMode = Manhunt.config.getString("name-pattern-mode");
 		String namePattern = Manhunt.config.getString("name-pattern");
+		if (namePattern == null || namePatternMode == null) return false;
+
 		String worldName = world.getName();
 		
 		if (namePatternMode.equals("regex")) {
@@ -141,18 +123,16 @@ public class WorldManager {
 		
 		String baseName = null;
 		
-		outer: for (int i = 0; i < worlds.size(); i++) {
-			
-			World world = worlds.get(i);
-			
+		outer: for (World world : worlds) {
+
 			for (int j = 0; j < GameManager.games.size(); j++) {
 				if (GameManager.games.get(j).getWorlds().toString().equals(world.getName())) continue outer;
 			}
-	
+
 			if (Bukkit.getWorld(world.getName() + "_nether") != null && Bukkit.getWorld(world.getName() + "_the_end") != null) {
 				baseName = world.getName();
 			}
-			
+
 			break;
 		}
 		
@@ -170,17 +150,16 @@ public class WorldManager {
 	}
 
 	public static World[] createGameWorlds(String baseName) {
-		
-		String overworld = baseName;
+
 		String nether = baseName + "_nether";
 		String end = baseName + "_the_end";
 		
 		World[] worlds = new World[3];
 		
-		if (Bukkit.getWorld(overworld) == null) 
-			worlds[0] = createWorld(overworld, Environment.NORMAL);
+		if (Bukkit.getWorld(baseName) == null)
+			worlds[0] = createWorld(baseName, Environment.NORMAL);
 		else 
-			worlds[0] = Bukkit.getWorld(overworld);
+			worlds[0] = Bukkit.getWorld(baseName);
 		
 		
 		if (Bukkit.getWorld(nether) == null) 
@@ -201,23 +180,22 @@ public class WorldManager {
 		
 		WorldSet worldSet = game.getWorlds();
 		World[] worlds = worldSet.worlds;
-		
-		for (int i = 0; i < worlds.length; i++) {
-						
-			for (Player p : worlds[i].getPlayers()) {
-				
+
+		for (World world : worlds) {
+
+			for (Player p : world.getPlayers()) {
+
 				Location loc = p.getBedSpawnLocation();
-				
+
 				if (loc != null) {
 					p.teleport(loc);
 				} else {
 					p.teleport(Bukkit.getWorlds().get(0).getSpawnLocation());
 				}
-					
 			}
-			
-			Bukkit.getServer().unloadWorld(worlds[i], false);
-			deleteWorld(worlds[i].getName());
+
+			Bukkit.getServer().unloadWorld(world, false);
+			deleteWorld(world.getName());
 		}
 	}
 }

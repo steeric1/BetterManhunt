@@ -39,70 +39,61 @@ public class PlayerManager {
 			
 		}
 		
-		if (xp > 0) ((ExperienceOrb) player.getWorld().spawn(location, ExperienceOrb.class)).setExperience(xp);	
+		if (xp > 0) (player.getWorld().spawn(location, ExperienceOrb.class)).setExperience(xp);
 	}
 
 	public static void dropItems(Player player) {
 		
-		dropItems(player, player.getLocation(), (player.getLevel() * 7 > 100 ? 100 : player.getLevel() * 7));
+		dropItems(player, player.getLocation(), (Math.min(player.getLevel() * 7, 100)));
 	}
 	
 	public static void respawnHunter(Manhunter mh, Game game) {
 		
-		Player player = Bukkit.getPlayer(mh.getPlayer());
-		player.setGameMode(GameMode.SPECTATOR);
-		player.setPlayerListName(ChatColor.RED + " [" + mh.getType().toString().substring(0, 1).toUpperCase() + "] " + player.getName() + " ");
+		Player playerHandle = Bukkit.getPlayer(mh.getPlayer());
+		if (playerHandle == null) return;
 
-		int xp = player.getLevel() * 7;
+		playerHandle.setGameMode(GameMode.SPECTATOR);
+		playerHandle.setPlayerListName(ChatColor.RED + " [" + mh.getType().toString().substring(0, 1).toUpperCase() + "] " + playerHandle.getName() + " ");
+
+		int xp = playerHandle.getLevel() * 7;
 		if (xp > 100) xp = 100;
 		
-		Location spawnLocation = player.getBedSpawnLocation();
-		Location location = player.getLocation();
+		Location spawnLocation = playerHandle.getBedSpawnLocation();
+		Location location = playerHandle.getLocation();
 							
-		player.sendMessage(ChatColor.AQUA + "You died!");
-		player.sendMessage(ChatColor.GOLD + "Respawning...");
+		playerHandle.sendMessage(ChatColor.AQUA + "You died!");
+		playerHandle.sendMessage(ChatColor.GOLD + "Respawning...");
 		
-		dropItems(player, location, xp);
-		player.getInventory().addItem(PlayerTracking.getTracker());
+		dropItems(playerHandle, location, xp);
+		playerHandle.getInventory().addItem(PlayerTracking.getTracker());
 		
 		if (spawnLocation != null) {
 			Location loc = new Location(spawnLocation.getWorld(), spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ());
 			loc.setDirection(loc.getDirection().setX(0).setY(1).setZ(0));
-			player.teleport(loc);
+			playerHandle.teleport(loc);
 		} else {
 			Location gameSpawn = game.getWorlds().worlds[0].getSpawnLocation();
-			if (gameSpawn != null) {
-				Location loc = new Location(gameSpawn.getWorld(), gameSpawn.getX(), gameSpawn.getY(), gameSpawn.getZ());
-				loc.setDirection(loc.getDirection().setX(0).setY(1).setZ(0));
-				player.teleport(loc);
-			}
+			Location loc = new Location(gameSpawn.getWorld(), gameSpawn.getX(), gameSpawn.getY(), gameSpawn.getZ());
+			loc.setDirection(loc.getDirection().setX(0).setY(1).setZ(0));
+			playerHandle.teleport(loc);
 		}
 		
-		player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20, 255, false, false, true));
+		playerHandle.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20, 255, false, false, true));
 
-		Bukkit.getScheduler().scheduleSyncDelayedTask(Manhunt.manhuntPlugin, new Runnable() {
-			
-			@Override
-			public void run() {
-
-				player.setHealth(20.0);
-				player.setFireTicks(0);
-				player.setFoodLevel(20);
-				player.setSaturation(20);
-				player.setLevel(0);
-				player.setExp(0.0f);
-				player.setRemainingAir(player.getMaximumAir());
-			}
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Manhunt.manhuntPlugin, () -> {
+			playerHandle.setHealth(20.0);
+			playerHandle.setFireTicks(0);
+			playerHandle.setFoodLevel(20);
+			playerHandle.setSaturation(20);
+			playerHandle.setLevel(0);
+			playerHandle.setExp(0.0f);
+			playerHandle.setRemainingAir(playerHandle.getMaximumAir());
 		}, 10);
 		
-		Bukkit.getScheduler().scheduleSyncDelayedTask(Manhunt.manhuntPlugin, new Runnable() {
-			
-			@Override
-			public void run() {
-				player.setGameMode(GameMode.SURVIVAL);	
-				mh.setAlive(true);
-				player.setPlayerListName(ChatColor.GREEN + " [" + mh.getType().toString().substring(0, 1).toUpperCase() + "] " + player.getName() + " ");
-			}
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Manhunt.manhuntPlugin, () -> {
+			playerHandle.setGameMode(GameMode.SURVIVAL);
+			mh.setAlive(true);
+			playerHandle.setPlayerListName(ChatColor.GREEN + " [" + mh.getType().toString().substring(0, 1).toUpperCase() + "] " + playerHandle.getName() + " ");
 		}, 20);
 	}
 	

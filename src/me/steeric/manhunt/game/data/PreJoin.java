@@ -6,8 +6,8 @@ import me.steeric.manhunt.game.Game;
 
 public class PreJoin {
 	
-	private UUID player;
-	private Game game;
+	private final UUID player;
+	private final Game game;
 	
 	public PreJoin(UUID player, Game game) {
 		this.player = player;

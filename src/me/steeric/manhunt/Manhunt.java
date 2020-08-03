@@ -1,5 +1,6 @@
 package me.steeric.manhunt;
 
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -31,8 +32,11 @@ public class Manhunt extends JavaPlugin {
 			};
 		
 		for (String cmd : commands) {
-			this.getCommand(cmd).setExecutor(handler);
-			this.getCommand(cmd).setTabCompleter(completer);
+			PluginCommand command = this.getCommand(cmd);
+			if (command != null) {
+				command.setExecutor(handler);
+				command.setTabCompleter(completer);
+			}
 		}
 		
 		// load config.yml

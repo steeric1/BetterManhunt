@@ -10,21 +10,20 @@ import org.bukkit.potion.PotionEffect;
 
 public class PlayerData {
 	
-	private Location location;
-	private ItemStack[] inventory;
-	private ItemStack[] enderchest;
-	private Location spawnLocation;
-//	private HashMap<Advancement, Collection<String>> advancementCriteria;
-	private GameMode gamemode;
-	private Collection<PotionEffect> effects;
+	private final Location location;
+	private final ItemStack[] inventory;
+	private final ItemStack[] enderchest;
+	private final Location spawnLocation;
+	private final GameMode gamemode;
+	private final Collection<PotionEffect> effects;
 	private double healthScale;
-	private boolean isHealthScaled;
-	private double health;
-	private float exp;
-	private int expLevel;
-	private float saturation;
-	private int foodLevel;
-	private Location compassTarget;
+	private final boolean isHealthScaled;
+	private final double health;
+	private final float exp;
+	private final int expLevel;
+	private final float saturation;
+	private final int foodLevel;
+	private final Location compassTarget;
 	
 	public PlayerData(Player player) {
 		
