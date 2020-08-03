@@ -91,7 +91,7 @@ public class EventListeners implements Listener {
 					
 					player.spigot().sendMessage(message);
 					
-					game.decrementRunnersLeft();
+					game.decrementRunnersLeft(player.getUniqueId());
 					p.setAlive(false);
 
 			

@@ -33,6 +33,7 @@ public class Game {
 	private final ArrayList<Manhunter> players;
 	private final ArrayList<Manhunter> hunters;
 	private final ArrayList<Manhunter> runners;
+	private ArrayList<UUID> deadRunners;
 	private GameState state;
 	private final WorldSet worlds;
 	private final boolean createdWorld;
@@ -41,6 +42,7 @@ public class Game {
 	private int headStartTime;
 	private final ArrayList<PreJoin> preJoins;
 	private Location endLocation;
+
 	
 	public Game(Player admin, String name, WorldSet worlds, boolean createdWorld) {
 		
@@ -56,6 +58,7 @@ public class Game {
 		this.players = new ArrayList<>();
 		this.hunters = new ArrayList<>();
 		this.runners = new ArrayList<>();
+		this.deadRunners = new ArrayList<>();
 		
 		this.preJoins = new ArrayList<>();
 	}
@@ -195,23 +198,20 @@ public class Game {
 		
 	}
 	
-	public int getRunnersLeft() {
-		return this.runnersLeft;
-	}
-	
-	public void decrementRunnersLeft() {
-		
+	public void decrementRunnersLeft(UUID player) {
+
+		for (UUID id : this.deadRunners) {
+			if (id.equals(player)) return;
+		}
+
+		this.deadRunners.add(player);
 		this.runnersLeft--;
 		
 		if (this.runnersLeft < 1 && this.state == GameState.RUNNING) {
 			this.gameOver(PlayerType.HUNTER);
 		}
 	}
-	
-	public int getHeadStartTime() {
-		return this.headStartTime;
-	}
-	
+
 	public void setHeadStartTime(int time) {
 		this.headStartTime = time;
 	}
@@ -263,7 +263,7 @@ public class Game {
 			
 			this.runners.remove(index);
 			
-			if (p.isAlive()) this.decrementRunnersLeft();
+			if (p.isAlive()) this.decrementRunnersLeft(p.getPlayer());
 			
 		} else if (p.getType() == PlayerType.HUNTER) {
 		
