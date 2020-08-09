@@ -1,7 +1,8 @@
-package me.steeric.manhunt.managing;
+package me.steeric.manhunt.game.managing;
 
 import java.util.ArrayList;
 
+import me.steeric.manhunt.game.players.Hunter;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -13,7 +14,6 @@ import org.bukkit.potion.PotionEffectType;
 
 import me.steeric.manhunt.Manhunt;
 import me.steeric.manhunt.game.Game;
-import me.steeric.manhunt.game.Manhunter;
 import me.steeric.manhunt.game.PlayerTracking;
 import net.md_5.bungee.api.ChatColor;
 
@@ -47,13 +47,14 @@ public class PlayerManager {
 		dropItems(player, player.getLocation(), (Math.min(player.getLevel() * 7, 100)));
 	}
 	
-	public static void respawnHunter(Manhunter mh, Game game) {
+	public static void respawnHunter(Hunter hunter, Game game) {
 		
-		Player playerHandle = Bukkit.getPlayer(mh.getPlayer());
-		if (playerHandle == null) return;
+		Player playerHandle = hunter.getPlayerHandle();
+		if (playerHandle == null)
+			return;
 
 		playerHandle.setGameMode(GameMode.SPECTATOR);
-		playerHandle.setPlayerListName(ChatColor.RED + " [" + mh.getType().toString().substring(0, 1).toUpperCase() + "] " + playerHandle.getName() + " ");
+		playerHandle.setPlayerListName(ChatColor.RED + hunter.getPlayerListName());
 
 		int xp = playerHandle.getLevel() * 7;
 		if (xp > 100) xp = 100;
@@ -92,8 +93,8 @@ public class PlayerManager {
 		
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Manhunt.manhuntPlugin, () -> {
 			playerHandle.setGameMode(GameMode.SURVIVAL);
-			mh.setAlive(true);
-			playerHandle.setPlayerListName(ChatColor.GREEN + " [" + mh.getType().toString().substring(0, 1).toUpperCase() + "] " + playerHandle.getName() + " ");
+			hunter.setDead(false);
+			playerHandle.setPlayerListName(ChatColor.GREEN + hunter.getPlayerListName());
 		}, 20);
 	}
 	

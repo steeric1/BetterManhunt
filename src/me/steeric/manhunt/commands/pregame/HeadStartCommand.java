@@ -8,27 +8,27 @@ import org.bukkit.entity.Player;
 import me.steeric.manhunt.commands.GeneralCommand;
 import me.steeric.manhunt.game.Game;
 import me.steeric.manhunt.game.Game.GameState;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.GameManager;
 
 public class HeadStartCommand implements GeneralCommand {
 
 	@Override
-	public boolean execute(Player player, String time) {
+	public boolean execute(Player playerHandle, String time) {
 		
-		Game game = GameManager.inGame(player);
+		Game game = GameManager.inGame(playerHandle);
 		
 		if (game == null) {
-			player.sendMessage(RED + "You are not in a game!");
+			playerHandle.sendMessage(RED + "You are not in a game!");
 			return true;
 		}
 		
-		if (!game.getAdmin().equals(game.findPlayer(player).getPlayer()) && !player.hasPermission("bettermanhunt.admin")) {
-			player.sendMessage(RED + "You don't have the permissions to do that!");
+		if (!game.getAdmin().equals(game.findPlayer(playerHandle).getPlayerId()) && !playerHandle.hasPermission("bettermanhunt.admin")) {
+			playerHandle.sendMessage(RED + "You don't have the permissions to do that!");
 			return true;
 		}
 		
 		if (game.getState() == GameState.RUNNING || game.getState() == GameState.GAME_OVER) {
-			player.sendMessage(RED + "You can't do that now! The game has already started!");
+			playerHandle.sendMessage(RED + "You can't do that now! The game has already started!");
 			return true;
 		}
 		
@@ -42,7 +42,7 @@ public class HeadStartCommand implements GeneralCommand {
 		
 		if (headstart > -1) {
 			game.setHeadStartTime(headstart);
-			player.sendMessage(AQUA + "Head start time updated!");
+			playerHandle.sendMessage(AQUA + "Head start time updated!");
 			return true;
 		}
 		

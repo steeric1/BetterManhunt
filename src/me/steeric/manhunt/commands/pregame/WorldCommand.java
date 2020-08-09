@@ -9,37 +9,37 @@ import org.bukkit.entity.Player;
 
 import me.steeric.manhunt.commands.GameCommand;
 import me.steeric.manhunt.game.data.PreGame;
-import me.steeric.manhunt.managing.GameManager;
-import me.steeric.manhunt.managing.WorldManager;
+import me.steeric.manhunt.game.managing.GameManager;
+import me.steeric.manhunt.game.managing.WorldManager;
 
 public class WorldCommand {
 	
 	public static class FindWorldCommand implements GameCommand {
 
 		@Override
-		public boolean execute(Player player) {
+		public boolean execute(Player playerHandle) {
 			
-			if (!player.hasPermission("bettermanhunt.createnewworld")) {
-				player.sendMessage(RED + "You don't have the permission to do that!");
+			if (!playerHandle.hasPermission("bettermanhunt.createnewworld")) {
+				playerHandle.sendMessage(RED + "You don't have the permission to do that!");
 				return true;
 			}
 			
-			PreGame preGame = GameManager.findPreGame(player.getUniqueId());
+			PreGame preGame = GameManager.findPreGame(playerHandle.getUniqueId());
 			if (preGame == null) {
-				player.sendMessage("You are not creating a game!");
+				playerHandle.sendMessage("You are not creating a game!");
 				return true;
 			}
 			
-			player.sendMessage(AQUA + "Finding a world...");
+			playerHandle.sendMessage(AQUA + "Finding a world...");
 			String baseName = WorldManager.findWorld();
 			
 			if (baseName == null) {
-				player.sendMessage(RED + "Could not find an applicable world. Try again later!");
+				playerHandle.sendMessage(RED + "Could not find an applicable world. Try again later!");
 				GameManager.preGames.remove(preGame);
 				return true;
 			}
 			
-			GameManager.createGame(player, preGame.getName(), baseName, false);
+			GameManager.createGame(playerHandle, preGame.getName(), baseName, false);
 			
 			return true;
 		}
@@ -48,18 +48,18 @@ public class WorldCommand {
 	public static class NewWorldCommand implements GameCommand {
 
 		@Override
-		public boolean execute(Player player) {
+		public boolean execute(Player playerHandle) {
 
-			PreGame preGame = GameManager.findPreGame(player.getUniqueId());
+			PreGame preGame = GameManager.findPreGame(playerHandle.getUniqueId());
 			if (preGame == null) {
-				player.sendMessage("You are not creating a game!");
+				playerHandle.sendMessage("You are not creating a game!");
 				return true;
 			}
 			
 			String baseName = "auto_MHWORLD_" + GameManager.games.size();
-			player.sendMessage(RED + "Starting to create new worlds. You might experience (heavy) lag during the operation.");
+			playerHandle.sendMessage(RED + "Starting to create new worlds. You might experience (heavy) lag during the operation.");
 			
-			GameManager.createGame(player, preGame.getName(), baseName, true);
+			GameManager.createGame(playerHandle, preGame.getName(), baseName, true);
 			
 			return true;
 		}
@@ -68,32 +68,31 @@ public class WorldCommand {
 	public static class ThisWorldCommand implements GameCommand {
 
 		@Override
-		public boolean execute(Player player) {
+		public boolean execute(Player playerHandle) {
 			
-			PreGame preGame = GameManager.findPreGame(player.getUniqueId());
+			PreGame preGame = GameManager.findPreGame(playerHandle.getUniqueId());
 			if (preGame == null) {
-				player.sendMessage(RED + "You are not creating a game!");
+				playerHandle.sendMessage(RED + "You are not creating a game!");
 				return true;
 			}
 			
-			World world = player.getWorld();
+			World world = playerHandle.getWorld();
 			if (world.getEnvironment() != Environment.NORMAL) {
-				player.sendMessage(RED + "Games can be only started in the overworld!");
+				playerHandle.sendMessage(RED + "Games can be only started in the overworld!");
 				return true;
 			}
 			
 			if (!WorldManager.worldsExist(world.getName())) {
-				player.sendMessage(RED + "Can't find a nether or an end to link with this world!");
+				playerHandle.sendMessage(RED + "Can't find a nether or an end to link with this world!");
 				return true;
 			}
 			
 			String baseName = world.getName();
-			player.sendMessage(AQUA + "Creating a game in this world.");
+			playerHandle.sendMessage(AQUA + "Creating a game in this world.");
 
-			GameManager.createGame(player, preGame.getName(), baseName, false);
+			GameManager.createGame(playerHandle, preGame.getName(), baseName, false);
 			
 			return false;
 		}
-		
 	}
 }

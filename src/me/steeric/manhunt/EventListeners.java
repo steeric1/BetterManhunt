@@ -1,7 +1,11 @@
 package me.steeric.manhunt;
 
 import java.util.ArrayList;
+import java.util.List;
 
+import me.steeric.manhunt.game.players.AbstractManhuntPlayer;
+import me.steeric.manhunt.game.players.Hunter;
+import me.steeric.manhunt.game.players.Runner;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World.Environment;
@@ -21,11 +25,9 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 
 import me.steeric.manhunt.game.Game;
 import me.steeric.manhunt.game.Game.GameState;
-import me.steeric.manhunt.game.Manhunter;
-import me.steeric.manhunt.game.Manhunter.PlayerType;
-import me.steeric.manhunt.managing.GameManager;
-import me.steeric.manhunt.managing.PlayerManager;
-import me.steeric.manhunt.managing.WorldManager;
+import me.steeric.manhunt.game.managing.GameManager;
+import me.steeric.manhunt.game.managing.PlayerManager;
+import me.steeric.manhunt.game.managing.WorldManager;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -43,13 +45,13 @@ public class EventListeners implements Listener {
 		
 		if (event.getEntity().getType() == EntityType.ENDER_DRAGON) {
 			
-			Player player = event.getEntity().getKiller();
-			Game game = GameManager.inGame(player);
+			Player playerHandle = event.getEntity().getKiller();
+			Game game = GameManager.inGame(playerHandle);
 			
-			if (game == null || player == null) return;
+			if (game == null || playerHandle == null) return;
 			
-			if (game.findPlayer(player).getType() == PlayerType.RUNNER && game.getState() == GameState.RUNNING) {
-				game.gameOver(PlayerType.RUNNER);
+			if (game.findPlayer(playerHandle) instanceof Runner && game.getState() == GameState.RUNNING) {
+				game.gameOver(Runner.class);
 			}	
 		}
 	}
@@ -59,23 +61,23 @@ public class EventListeners implements Listener {
 		
 		if (event.getEntity() instanceof Player) {
 			
-			Player player = (Player) event.getEntity();
-			Game game = GameManager.inGame(player);
+			Player playerHandle = (Player) event.getEntity();
+			Game game = GameManager.inGame(playerHandle);
 			
 			if (game == null) return;
 			
-			Manhunter p = game.findPlayer(player);			
-			double health = player.getHealth() - event.getFinalDamage();
+			AbstractManhuntPlayer manhuntPlayer = game.findPlayer(playerHandle);
+			double health = playerHandle.getHealth() - event.getFinalDamage();
 			
-			if (health <= 0) {
+			if (health <= 0.0) {
 				
 				event.setCancelled(true);
 				
-				if (p.getType() == PlayerType.RUNNER && game.getState() == GameState.RUNNING) {
+				if (manhuntPlayer instanceof Runner && game.getState() == GameState.RUNNING) {
 					
-					player.setGameMode(GameMode.SPECTATOR);
-					player.setPlayerListName(ChatColor.RED + " [" + p.getType().toString().substring(0, 1).toUpperCase() + "] " + player.getName() + " ");
-					PlayerManager.dropItems(player);
+					playerHandle.setGameMode(GameMode.SPECTATOR);
+					playerHandle.setPlayerListName(ChatColor.RED + manhuntPlayer.getPlayerListName());
+					PlayerManager.dropItems(playerHandle);
 					
 					TextComponent[] message = new TextComponent[3];
 
@@ -89,17 +91,15 @@ public class EventListeners implements Listener {
 					message[2] = new TextComponent(" ]");
 					message[2].setColor(ChatColor.AQUA);
 					
-					player.spigot().sendMessage(message);
+					playerHandle.spigot().sendMessage(message);
 					
-					game.decrementRunnersLeft(player.getUniqueId());
-					p.setAlive(false);
+					game.decrementRunnersLeft((Runner) manhuntPlayer);
+					manhuntPlayer.setDead(true);
 
-			
-				} else if (p.getType() == PlayerType.HUNTER && game.getState() == GameState.RUNNING) {
+				} else if (manhuntPlayer instanceof Hunter && game.getState() == GameState.RUNNING) {
 					
-					p.setAlive(false);
-					PlayerManager.respawnHunter(p, game);
-					
+					manhuntPlayer.setDead(true);
+					PlayerManager.respawnHunter((Hunter) manhuntPlayer, game);
 				}
 				
 				if (event instanceof EntityDamageByEntityEvent) {
@@ -114,16 +114,16 @@ public class EventListeners implements Listener {
 						
 						if (!game.equals(g)) return;
 						
-						Manhunter mh = game.findPlayer(killer);
+						AbstractManhuntPlayer killerManhuntPlayer = game.findPlayer(killer);
 						
-						game.deathMessage(p.toString() + " was killed by " + mh.toString(), p);
+						game.deathMessage(manhuntPlayer.toString() + " was killed by " + killerManhuntPlayer.toString(), manhuntPlayer);
 					
 					} else {
-						game.deathMessage(p.toString() + " died", p);
+						game.deathMessage(manhuntPlayer.toString() + " died", manhuntPlayer);
 					}
 					
 				} else {
-					game.deathMessage(p.toString() + " died", p);
+					game.deathMessage(manhuntPlayer.toString() + " died", manhuntPlayer);
 				}
 			} 
 		}
@@ -144,17 +144,18 @@ public class EventListeners implements Listener {
 		if (damagerGame == null || targetGame == null) return;
 		if (!damagerGame.equals(targetGame)) return;
 		
-		Manhunter mhdamager = damagerGame.findPlayer(damager);
-		Manhunter mhtarget = damagerGame.findPlayer(target);
+		AbstractManhuntPlayer damagerManhuntPlayer = damagerGame.findPlayer(damager);
+		AbstractManhuntPlayer targetManhuntPlayer = damagerGame.findPlayer(target);
 		
-		if (mhdamager.getType() == mhtarget.getType()) event.setCancelled(true);
+		if (damagerManhuntPlayer.getClass() == targetManhuntPlayer.getClass())
+			event.setCancelled(true);
 	}
 	
 	@EventHandler
 	public void onTeleport(PlayerTeleportEvent event) {
 		
-		Player player = event.getPlayer();
-		Game game = GameManager.inGame(player);
+		Player playerHandle = event.getPlayer();
+		Game game = GameManager.inGame(playerHandle);
 		
 		if (game == null) return;
 		
@@ -166,15 +167,14 @@ public class EventListeners implements Listener {
 			if (game.getState() == GameState.GAME_OVER && !to.getWorld().equals(game.getWorlds().worlds[0])
 					&& !to.getWorld().equals(game.getWorlds().worlds[1]) && !to.getWorld().equals(game.getWorlds().worlds[2])) {
 				
-				Manhunter p = game.findPlayer(player);
+				AbstractManhuntPlayer player = game.findPlayer(playerHandle);
 				
-				if (!p.isDataRestored()) {
+				if (!player.isPlayerDataRestored()) {
 					
 					event.setCancelled(true);
 					Location location = event.getTo();
-					p.restoreData();
-					player.teleport(location);
-					
+					player.restoreData();
+					playerHandle.teleport(location);
 				}
 			}
 		}
@@ -190,20 +190,18 @@ public class EventListeners implements Listener {
 		// this way, if we save tracker targets, on player login
 		// players' tracker targets will not be reset to world spawn point
 		
-		Player player = event.getPlayer();
-		Game game = GameManager.inGame(player);
+		Player playerHandle = event.getPlayer();
+		Game game = GameManager.inGame(playerHandle);
 		
 		if (game == null) return;
 		
-		Manhunter p = game.findPlayer(player);
+		AbstractManhuntPlayer player = game.findPlayer(playerHandle);
 		
-		if (game.getState() == GameState.RUNNING && p.getType() == PlayerType.HUNTER) {
-			p.setCompassTargetAtQuit(player.getCompassTarget());
-		}
+		if (game.getState() == GameState.RUNNING && player instanceof Hunter)
+			((Hunter) player).setCompassTargetAtQuit(playerHandle.getCompassTarget());
 		
-		if (game.getState() == GameState.GAME_OVER) {
-			p.restoreData();
-		}
+		if (game.getState() == GameState.GAME_OVER)
+			player.restoreData();
 	}
 	
 	@EventHandler
@@ -212,21 +210,22 @@ public class EventListeners implements Listener {
 		// update player's compass target
 		// based on corresponding MHPlayer object
 		
-		Player player = event.getPlayer();
-		Game game = GameManager.inGame(player);
+		Player playerHandle = event.getPlayer();
+		Game game = GameManager.inGame(playerHandle);
 		
 		if (game == null) return;
 		
-		Manhunter p = game.findPlayer(player);
+		AbstractManhuntPlayer player = game.findPlayer(playerHandle);
 		
-		if (p.isAlive()) 
-			player.setPlayerListName(ChatColor.GREEN + " [" + p.getType().toString().substring(0, 1).toUpperCase() + "] " + player.getName() + " ");
+		if (!player.isDead())
+			playerHandle.setPlayerListName(ChatColor.GREEN + player.getPlayerListName());
 		else
-			player.setPlayerListName(ChatColor.RED + " [" + p.getType().toString().substring(0, 1).toUpperCase() + "] " + player.getName() + " ");
+			playerHandle.setPlayerListName(ChatColor.RED + player.getPlayerListName());
 
-		if (p.getType() == PlayerType.HUNTER && game.getState() == GameState.RUNNING) {
-			player.setCompassTarget(p.getCompassTargetAtQuit());
-			p.updateTracker();
+		if (player instanceof Hunter && game.getState() == GameState.RUNNING) {
+			Hunter hunter = (Hunter) player;
+			playerHandle.setCompassTarget(hunter.getCompassTargetAtQuit());
+			hunter.updateTracker();
 		}
 	}
 	
@@ -280,24 +279,23 @@ public class EventListeners implements Listener {
 		// when runners move, all hunters in the specific game
 		// need to get their trackers updated
 		
-		Player player = event.getPlayer();
-		Game game = GameManager.inGame(player);
+		Player playerHandle = event.getPlayer();
+		Game game = GameManager.inGame(playerHandle);
 		
 		if (game == null) return;
 		
-		Manhunter mhplayer = game.findPlayer(player);
+		AbstractManhuntPlayer player = game.findPlayer(playerHandle);
 		
 		// if the player that moved is a runner, get a list of all
 		// hunters in the game
-		if (mhplayer.getType() == PlayerType.RUNNER && game.getState() == GameState.RUNNING) {
+		if (player instanceof Runner && game.getState() == GameState.RUNNING) {
 			
-			ArrayList<Manhunter> hunters = game.getHunters();
+			List<Hunter> hunters = game.getHunters();
 
-			for (Manhunter hunter : hunters) {
+			for (Hunter hunter : hunters) {
 				hunter.updateTracker();
 			}
-
-		} else if (mhplayer.getType() == PlayerType.HUNTER && (game.headStartNotOver() || !mhplayer.isAlive()) && game.getState() == GameState.RUNNING) {
+		} else if (player instanceof Hunter && (game.headStartNotOver() || player.isDead()) && game.getState() == GameState.RUNNING) {
 			event.setCancelled(true);
 		}
 	}

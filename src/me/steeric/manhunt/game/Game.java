@@ -1,10 +1,13 @@
 package me.steeric.manhunt.game;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
+import me.steeric.manhunt.game.players.*;
+import me.steeric.manhunt.gui.TeamSelectionGui;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_16_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
@@ -12,7 +15,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import me.steeric.manhunt.Manhunt;
-import me.steeric.manhunt.game.Manhunter.PlayerType;
 import me.steeric.manhunt.game.data.PreJoin;
 import me.steeric.manhunt.game.data.WorldSet;
 import net.md_5.bungee.api.ChatColor;
@@ -30,20 +32,20 @@ public class Game {
 
 	private final UUID admin;
 	private final String name;
-	private final ArrayList<Manhunter> players;
-	private final ArrayList<Manhunter> hunters;
-	private final ArrayList<Manhunter> runners;
-	private final ArrayList<UUID> deadRunners;
+	private final List<AbstractManhuntPlayer> manhuntPlayers;
+	private final List<Hunter> hunters;
+	private final List<Runner> runners;
+	private final List<Spectator> spectators;
 	private GameState state;
 	private final WorldSet worlds;
 	private final boolean createdWorld;
 	private boolean headStartOver;
 	private int runnersLeft;
 	private int headStartTime;
-	private final ArrayList<PreJoin> preJoins;
+	private final List<PreJoin> preJoins;
 	private Location endLocation;
+	private final TeamSelectionGui teamSelectionGui;
 
-	
 	public Game(Player admin, String name, WorldSet worlds, boolean createdWorld) {
 		
 		this.admin = admin.getUniqueId();
@@ -54,135 +56,61 @@ public class Game {
 		this.headStartOver = false;
 		this.runnersLeft = 0;
 		this.headStartTime = 30;
+		this.teamSelectionGui = new TeamSelectionGui(this);
 		
-		this.players = new ArrayList<>();
+		this.manhuntPlayers = new ArrayList<>();
 		this.hunters = new ArrayList<>();
 		this.runners = new ArrayList<>();
-		this.deadRunners = new ArrayList<>();
-		
+		this.spectators = new ArrayList<>();
+
 		this.preJoins = new ArrayList<>();
 	}
 	
 	public void start() {
-		
-		for (Manhunter p : this.players) {
-					
-			Player player = Bukkit.getServer().getPlayer(p.getPlayer());
-			if (player == null) return;
 
-			p.saveData();
-			player.setPlayerListName(ChatColor.GREEN + " [" + p.getType().toString().substring(0, 1).toUpperCase() + "] " + player.getName() + " ");
-			Location spawnLoc = this.worlds.worlds[0].getSpawnLocation();
-			Location loc = new Location(spawnLoc.getWorld(), spawnLoc.getX(), spawnLoc.getY(), spawnLoc.getZ());
-			if (p.getType() == PlayerType.HUNTER) 
-				loc.setDirection(loc.getDirection().setX(0).setY(1).setZ(0));
-			
-			player.teleport(loc);
-			player.getInventory().clear();
-			
-			player.getEnderChest().clear();
-			player.setBedSpawnLocation(spawnLoc, true);
-			
-			player.setGameMode(GameMode.SURVIVAL);
-			
-			for (PotionEffect effect : player.getActivePotionEffects()) {
-				player.removePotionEffect(effect.getType());
-				
-			}
-			
-			player.setHealthScaled(false);
-			player.setHealth(20);
-			player.setExp(0);
-			player.setLevel(0);
-			player.setSaturation(20);
-			player.setFoodLevel(20);
-			
-			player.sendMessage(ChatColor.AQUA + "Teleporting you to the game!");
-		}
-		
+		// set time to day
+		this.worlds.worlds[0].setFullTime(1000);
+
+		for (AbstractManhuntPlayer player : this.manhuntPlayers)
+			player.preparePlayer();
+
+		for (Spectator spectator : this.spectators)
+			spectator.preparePlayer();
+
+		this.giveStartingEffects();
+
 		Runnable task = new HunterTimeoutTask(this);
-		
-		for (Manhunter p : this.players) {
-			
-			Player player = Bukkit.getPlayer(p.getPlayer());
-			if (player == null) return;
-			
-			if (p.getType() == PlayerType.HUNTER) {
-				player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, this.headStartTime * 20, 255, false, false, true));
-				player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, this.headStartTime * 20, 255, false, false, true));
-			} else if (p.getType() == PlayerType.RUNNER) {
-				player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 5 * 20, 255, false, false, true));
-				
-				PacketPlayOutTitle title = new PacketPlayOutTitle(EnumTitleAction.TITLE, 
-						ChatSerializer.a("{\"text\":\"§cRUN!\"}"), 20, 40, 20);
-				PacketPlayOutTitle subtitle = new PacketPlayOutTitle(EnumTitleAction.SUBTITLE, 
-						ChatSerializer.a("{\"text\":\"§cYou are being hunted!\"}"), 40, 20, 20);
-				
-				((CraftPlayer) player).getHandle().playerConnection.sendPacket(title);
-				((CraftPlayer) player).getHandle().playerConnection.sendPacket(subtitle);
-			}
-		}
-		
 		Bukkit.getServer().getScheduler()
 			.scheduleSyncDelayedTask(Manhunt.manhuntPlugin, 
 					task, this.headStartTime * 20);
-		
+
 		this.state = GameState.RUNNING;
 	}
 	
-	public static class HunterTimeoutTask implements Runnable {
+	public AbstractManhuntPlayer findPlayer(Player playerHandle) {
 		
-		private final Game game;
+		UUID uuid = playerHandle.getUniqueId();
 		
-		public HunterTimeoutTask(Game game) {
-			this.game = game;
+		for (AbstractManhuntPlayer player : this.manhuntPlayers) {
+			if (player.getPlayerId().equals(uuid)) {
+				return player;
+			}
 		}
-		
-		@Override
-		public void run() {
-			
-			this.game.setHeadStartOver(true);
-			
-			for (Manhunter p : this.game.getHunters()) {
-				
-				Player player = Bukkit.getPlayer(p.getPlayer());
 
-				if (player != null) {
-					player.getInventory().addItem(PlayerTracking.getTracker());
-					player.teleport(player.getLocation().setDirection(player.getLocation().getDirection().setY(0).setX(1)));
-				}
-			}
-			
-		}
-		// this is a comment btw.
-	}
-	
-	public Manhunter findPlayer(Player player) {
-		
-		UUID uuid = player.getUniqueId();
-		
-		for (Manhunter p : this.players) {
-			if (p.getPlayer().equals(uuid)) {
-				return p;
-			}
-		}
-		
-		
 		return null;
 	}
 	
-	public void gameOver(PlayerType winner) {
+	public <T extends AbstractManhuntPlayer> void gameOver(Class<T> winnerTeam) {
 		
 		this.state = GameState.GAME_OVER;
 
-		for (Manhunter manhunter : this.players) {
+		for (AbstractManhuntPlayer manhuntPlayer : this.manhuntPlayers) {
 
-			Player player = Bukkit.getPlayer(manhunter.getPlayer());
+			Player playerHandle = manhuntPlayer.getPlayerHandle();
 
-			if (player != null) {
-				player.sendMessage(ChatColor.GOLD + "Game over!\n" +
-						winner.toString().substring(0, 1).toUpperCase() +
-						winner.toString().substring(1) + "s win!");
+			if (playerHandle != null) {
+				playerHandle.sendMessage(ChatColor.GOLD + "Game over!\n" +
+						winnerTeam.getSimpleName() + "s win!");
 			}
 		}
 		
@@ -205,97 +133,95 @@ public class Game {
 		
 	}
 	
-	public void decrementRunnersLeft(UUID player) {
+	public void decrementRunnersLeft(Runner runner) {
 
-		for (UUID id : this.deadRunners) {
-			if (id.equals(player)) return;
-		}
+		if (!runner.isDead())
+			return;
 
-		this.deadRunners.add(player);
 		this.runnersLeft--;
 		
-		if (this.runnersLeft < 1 && this.state == GameState.RUNNING) {
-			this.gameOver(PlayerType.HUNTER);
-		}
+		if (this.runnersLeft < 1 && this.state == GameState.RUNNING)
+			this.gameOver(Hunter.class);
 	}
 
 	public void setHeadStartTime(int time) {
 		this.headStartTime = time;
 	}
-	
-	public boolean addPlayer(Player player, PlayerType type) { // returns boolean value indicating success/failure
-		
-		// check if player already has joined the game
-		for (Manhunter p : this.players) {
-			
-			if (p.getPlayer().equals(player.getUniqueId())) 
-				return false;
+
+	public void addPlayer(AbstractPlayer player) { // returns boolean value indicating success/failure
+
+		if (player instanceof Spectator) {
+			this.spectators.add((Spectator) player);
+		} else {
+			this.manhuntPlayers.add((AbstractManhuntPlayer) player);
+
+			if (player instanceof Hunter) {
+				this.hunters.add((Hunter) player);
+			} else if (player instanceof Runner) {
+				this.runners.add((Runner) player);
+				this.runnersLeft++;
+			}
 		}
-		
-		Manhunter _player = new Manhunter(player, type, this);
-		
-		this.players.add(_player);
-		
-		if (type == PlayerType.HUNTER) this.hunters.add(_player);
-		else {
-			this.runners.add(_player);
-			this.runnersLeft++;
-		}
-		
-		return true;
+	}
+
+	public void showTeamSelectionGui(Player player) {
+		player.openInventory(this.teamSelectionGui.getInventory());
 	}
 	
-	public void removePlayer(Manhunter p) {
+	public void removePlayer(AbstractManhuntPlayer player) {
 		
 		int index = 0;
+		this.manhuntPlayers.remove(player);
 		
-		for (int i = 0; i < this.players.size(); i++) {
-			if (this.players.get(i).getPlayer().equals(p.getPlayer())) {
-				index = i;
-				break;
+		if (player instanceof Runner) {
+
+			Runner runner = (Runner) player;
+			this.runners.remove(runner);
+
+			if (player.isDead())
+				this.decrementRunnersLeft(runner);
+
+		} else if (player instanceof Hunter) {
+			this.hunters.remove(player);
+		}
+	}
+
+	private void giveStartingEffects() {
+
+		for (AbstractManhuntPlayer player : this.manhuntPlayers) {
+
+			Player playerHandle = player.getPlayerHandle();
+			if (playerHandle == null)
+				return;
+
+			if (player instanceof Hunter) {
+				playerHandle.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, this.headStartTime * 20, 255, false, false, true));
+				playerHandle.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, this.headStartTime * 20, 255, false, false, true));
+			} else if (player instanceof Runner) {
+				playerHandle.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 5 * 20, 255, false, false, true));
+
+				PacketPlayOutTitle title = new PacketPlayOutTitle(EnumTitleAction.TITLE,
+						ChatSerializer.a("{\"text\":\"§cRUN!\"}"), 20, 40, 20);
+				PacketPlayOutTitle subtitle = new PacketPlayOutTitle(EnumTitleAction.SUBTITLE,
+						ChatSerializer.a("{\"text\":\"§cYou are being hunted!\"}"), 40, 20, 20);
+
+				((CraftPlayer) playerHandle).getHandle().playerConnection.sendPacket(title);
+				((CraftPlayer) playerHandle).getHandle().playerConnection.sendPacket(subtitle);
 			}
 		}
-		
-		this.players.remove(index);
-		
-		if (p.getType() == PlayerType.RUNNER) {
-			
-			for (int i = 0; i < this.runners.size(); i++) {
-				if (this.runners.get(i).getPlayer().equals(p.getPlayer())) {
-					index = i;
-					break;
-				}
-			}
-			
-			this.runners.remove(index);
-			
-			if (p.isAlive()) this.decrementRunnersLeft(p.getPlayer());
-			
-		} else if (p.getType() == PlayerType.HUNTER) {
-		
-			for (int i = 0; i < this.hunters.size(); i++) {
-				if (this.hunters.get(i).getPlayer().equals(p.getPlayer())) {
-					index = i;
-					break;
-				}
-			}
-			
-			this.hunters.remove(index);
-			
-		}
-		
 	}
 	
-	public void deathMessage(String message, Manhunter player) {
+	public void deathMessage(String message, AbstractManhuntPlayer player) {
 		
-		for (Manhunter p : this.players) {
+		for (AbstractManhuntPlayer toPlayer : this.manhuntPlayers) {
 			
-			if (p.equals(player)) continue;
+			if (toPlayer.equals(player)) continue;
 
-			Player playerHandle = Bukkit.getPlayer(p.getPlayer());
-			if (playerHandle == null) continue;
+			Player playerHandle = toPlayer.getPlayerHandle();
+			if (playerHandle == null)
+				continue;
 
-			if (p.getType() == player.getType()) {
+			if (toPlayer.getClass() == player.getClass()) {
 				playerHandle.sendMessage(ChatColor.RED + message);
 			} else {
 				playerHandle.sendMessage(ChatColor.GREEN + message);
@@ -303,24 +229,22 @@ public class Game {
 		}
 	}
 	
-	public void notifyTeam(String message, PlayerType team) {
+	public <T extends AbstractManhuntPlayer> void notifyTeam(String message, Class<T> team) {
 
-		if (team == PlayerType.HUNTER) {
+		if (team == Hunter.class) {
 
-			for (Manhunter p : this.hunters) {
-				Player playerHandle = Bukkit.getPlayer(p.getPlayer());
-				if (playerHandle != null) {
+			for (AbstractManhuntPlayer player : this.hunters) {
+				Player playerHandle = player.getPlayerHandle();
+				if (playerHandle != null)
 					playerHandle.sendMessage(message);
-				}
 			}
 
-		} else if (team == PlayerType.RUNNER) {
+		} else if (team == Runner.class) {
 
-			for (Manhunter p : this.runners) {
-				Player playerHandle = Bukkit.getPlayer(p.getPlayer());
-				if (playerHandle != null) {
+			for (AbstractManhuntPlayer player : this.runners) {
+				Player playerHandle = player.getPlayerHandle();
+				if (playerHandle != null)
 					playerHandle.sendMessage(message);
-				}
 			}
 		}
 	}
@@ -353,40 +277,71 @@ public class Game {
 	public UUID getAdmin() {
 		return this.admin;
 	}
-	
+
 	public String getName()	{
 		return this.name;
 	}
-	
-	public ArrayList<Manhunter> getPlayers() {
-		return this.players;
+
+	public List<AbstractManhuntPlayer> getManhuntPlayers() {
+		return this.manhuntPlayers;
 	}
-	
-	public ArrayList<Manhunter> getHunters() {
+
+	public List<Hunter> getHunters() {
 		return this.hunters;
 	}
-	
-	public ArrayList<Manhunter> getRunners() {
+
+	public List<Runner> getRunners() {
 		return this.runners;
 	}
-	
-	public ArrayList<PreJoin> getPreJoins() {
+
+	public List<Spectator> getSpectators() {
+		return this.spectators;
+	}
+
+	public List<PreJoin> getPreJoins() {
 		return this.preJoins;
 	}
 
 	public void setEndLocation(Location location) { this.endLocation = location; }
 
 	public Location getEndLocation() { return this.endLocation; }
-	
+
 	@Override
 	public boolean equals(Object other) {
-		
+
 		if (other == null) return false;
 		if (!(other instanceof Game)) return false;
-		
+
 		Game otherGame = (Game) other;
 
 		return otherGame.getName().equals(this.name);
+	}
+
+
+	public static class HunterTimeoutTask implements Runnable {
+
+		private final Game game;
+
+		public HunterTimeoutTask(Game game) {
+			this.game = game;
+		}
+
+		@Override
+		public void run() {
+
+			this.game.setHeadStartOver(true);
+
+			for (AbstractManhuntPlayer player : this.game.getHunters()) {
+
+				Player playerHandle = player.getPlayerHandle();
+
+				if (playerHandle != null) {
+					playerHandle.getInventory().addItem(PlayerTracking.getTracker());
+					playerHandle.teleport(playerHandle.getLocation().setDirection(playerHandle.getLocation().getDirection().setY(0).setX(1)));
+				}
+			}
+
+		}
 	}
 	
 	public enum GameState {

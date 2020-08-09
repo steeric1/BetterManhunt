@@ -7,32 +7,32 @@ import org.bukkit.entity.Player;
 import me.steeric.manhunt.commands.GeneralCommand;
 import me.steeric.manhunt.game.Game;
 import me.steeric.manhunt.game.Game.GameState;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.GameManager;
 
 public class DeleteCommand implements GeneralCommand {
 
 	@Override
-	public boolean execute(Player player, String name) {
+	public boolean execute(Player playerHandle, String name) {
 
 		Game game = GameManager.findGame(name);
 		
 		if (game == null) { // if game was not found
-			player.sendMessage(RED + "That game doesn't exist!");
+			playerHandle.sendMessage(RED + "That game doesn't exist!");
 			return true;
 		} 
 		
 		// check if player invoking command is the admin of the game
-		if (!player.getUniqueId().equals(game.getAdmin()) && !player.hasPermission("bettermanhunt.admin")) {
-			player.sendMessage(RED + "You don't have the permission to do that!");
+		if (!playerHandle.getUniqueId().equals(game.getAdmin()) && !playerHandle.hasPermission("bettermanhunt.admin")) {
+			playerHandle.sendMessage(RED + "You don't have the permission to do that!");
 			return true;
 		}
 		
 		if (game.headStartNotOver() && game.getState() == GameState.RUNNING) {
-			player.sendMessage(RED + "You can't delete this game right now!");
+			playerHandle.sendMessage(RED + "You can't delete this game right now!");
 			return true;
 		}
 		
-		GameManager.deleteGame(game, player);
+		GameManager.deleteGame(game, playerHandle);
 		return true;
 	}
 

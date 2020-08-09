@@ -3,6 +3,8 @@ package me.steeric.manhunt.game;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.steeric.manhunt.game.players.AbstractManhuntPlayer;
+import me.steeric.manhunt.game.players.Runner;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -18,8 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import me.steeric.manhunt.Manhunt;
-import me.steeric.manhunt.game.Manhunter.PlayerType;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.GameManager;
 import net.md_5.bungee.api.ChatColor;
 import net.minecraft.server.v1_16_R1.IChatBaseComponent.ChatSerializer;
 import net.minecraft.server.v1_16_R1.PacketPlayOutTitle;
@@ -34,19 +35,19 @@ public class PlayerTracking implements Listener {
 	
 	public static Location findClosestRunner(Location location, Game game) {
 		
-		List<Manhunter> runners = game.getRunners();
-		List<Manhunter> runnersInSameWorld = new ArrayList<>();
+		List<Runner> runners = game.getRunners();
+		List<Runner> runnersInSameWorld = new ArrayList<>();
 
-		for (Manhunter runner : runners) {
+		for (Runner runner : runners) {
 
-			Player player = Bukkit.getPlayer(runner.getPlayer());
+			Player player = runner.getPlayerHandle();
 			if (player != null) {
 
-				if (player.getGameMode() == GameMode.SPECTATOR) continue;
+				if (player.getGameMode() == GameMode.SPECTATOR)
+					continue;
 
-				if (player.getWorld().equals(location.getWorld())) {
+				if (player.getWorld().equals(location.getWorld()))
 					runnersInSameWorld.add(runner);
-				}
 			}
 		}
 		
@@ -55,13 +56,13 @@ public class PlayerTracking implements Listener {
 		Player closestPlayer = null;
 		int index = 0;
 		while (closestPlayer == null)
-			closestPlayer = Bukkit.getPlayer(runnersInSameWorld.get(index++).getPlayer());
+			closestPlayer = runnersInSameWorld.get(index++).getPlayerHandle();
 
 		Location closest = closestPlayer.getLocation();
 		double distance;
 		for (int i = index + 1; i < runnersInSameWorld.size(); i++) {
 			
-			Player player = Bukkit.getPlayer(runnersInSameWorld.get(i).getPlayer());
+			Player player = runnersInSameWorld.get(i).getPlayerHandle();
 			if (player != null) {
 				Location playerLocation = player.getLocation();
 				distance = location.distanceSquared(playerLocation);
@@ -115,8 +116,9 @@ public class PlayerTracking implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mh = game.findPlayer(player);
-		if (mh.getType() == PlayerType.RUNNER) return;
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		if (manhuntPlayer instanceof Runner)
+			return;
 		
 		Action action = event.getAction();
 		
@@ -151,18 +153,19 @@ public class PlayerTracking implements Listener {
 	
 	private static TrackingTarget getClosestTarget(Location location, Game game) {
 		
-		List<Manhunter> runners = game.getRunners();
-		List<Manhunter> runnersInSameWorld = new ArrayList<>();
+		List<Runner> runners = game.getRunners();
+		List<Runner> runnersInSameWorld = new ArrayList<>();
 
-		for (Manhunter runner : runners) {
+		for (Runner runner : runners) {
 
-			Player playerHandle = Bukkit.getPlayer(runner.getPlayer());
+			Player playerHandle = runner.getPlayerHandle();
 			if (playerHandle != null) {
-				if (playerHandle.getGameMode() == GameMode.SPECTATOR) continue;
 
-				if (playerHandle.getWorld().equals(location.getWorld())) {
+				if (playerHandle.getGameMode() == GameMode.SPECTATOR)
+					continue;
+
+				if (playerHandle.getWorld().equals(location.getWorld()))
 					runnersInSameWorld.add(runner);
-				}
 			}
 		}
 		
@@ -171,19 +174,19 @@ public class PlayerTracking implements Listener {
 		Player closest = null;
 		int index = 0;
 		while (closest == null)
-			closest = Bukkit.getPlayer(runnersInSameWorld.get(index++).getPlayer());
+			closest = runnersInSameWorld.get(index++).getPlayerHandle();
 
 		double distance;
 		for (int i = index + 1; i < runnersInSameWorld.size(); i++) {
 			
-			Player playerHandle = Bukkit.getPlayer(runnersInSameWorld.get(i).getPlayer());
+			Player playerHandle = runnersInSameWorld.get(i).getPlayerHandle();
 			if (playerHandle != null) {
+
 				Location playerLocation = playerHandle.getLocation();
 				distance = location.distanceSquared(playerLocation);
 
-				if (distance < location.distanceSquared(closest.getLocation())) {
+				if (distance < location.distanceSquared(closest.getLocation()))
 					closest = playerHandle;
-				}
 			}
 		}
 		

@@ -11,7 +11,7 @@ import me.steeric.manhunt.Manhunt;
 import me.steeric.manhunt.commands.GeneralCommand;
 import me.steeric.manhunt.game.Game;
 import me.steeric.manhunt.game.data.PreGame;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.GameManager;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -19,26 +19,26 @@ import net.md_5.bungee.api.chat.TextComponent;
 
 public class CreateCommand implements GeneralCommand {
 	
-	public boolean execute(Player player, String name) {
+	public boolean execute(Player playerHandle, String name) {
 		
 		Game game = GameManager.findGame(name);
 		
 		if (game != null) { // a game by the same name already exists
-			player.sendMessage(RED + "A game by that name already exists! Try another name!");
+			playerHandle.sendMessage(RED + "A game by that name already exists! Try another name!");
 			return true;
 		}
 		
-		GameManager.preGames.add(new PreGame(player.getUniqueId(), name));
+		GameManager.preGames.add(new PreGame(playerHandle.getUniqueId(), name));
 
-		if (player.hasPermission("bettermanhunt.createnewworld") && Manhunt.config.getBoolean("create-new-world")) {
+		if (playerHandle.hasPermission("bettermanhunt.createnewworld") && Manhunt.config.getBoolean("create-new-world")) {
 			
 			TextComponent[] creationMessage = getCreationMessage(name);
-			player.spigot().sendMessage(creationMessage);				
+			playerHandle.spigot().sendMessage(creationMessage);
 		
 		} else {
 			
-			player.sendMessage(AQUA + "Creating game " + WHITE + name + ".");
-			Bukkit.dispatchCommand(player, "/findworld");
+			playerHandle.sendMessage(AQUA + "Creating game " + WHITE + name + ".");
+			Bukkit.dispatchCommand(playerHandle, "/findworld");
 			return true;
 			
 		}

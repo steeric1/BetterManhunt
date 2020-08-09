@@ -7,35 +7,35 @@ import org.bukkit.entity.Player;
 import me.steeric.manhunt.commands.GeneralCommand;
 import me.steeric.manhunt.game.Game;
 import me.steeric.manhunt.game.Game.GameState;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.GameManager;
 
 public class StartCommand implements GeneralCommand {
 
 	@Override
-	public boolean execute(Player player, String name) {
+	public boolean execute(Player playerHandle, String name) {
 
 		Game game = GameManager.findGame(name);
 		
 		if (game == null) { // if game was not found
 			
-			player.sendMessage(RED + "That game doesn't exist!");
+			playerHandle.sendMessage(RED + "That game doesn't exist!");
 			return true;
 		}
 		
 		// check if player invoking command is the admin of the game
-		if (!player.getUniqueId().equals(game.getAdmin()) && !player.hasPermission("bettermanhunt.admin")) {
+		if (!playerHandle.getUniqueId().equals(game.getAdmin()) && !playerHandle.hasPermission("bettermanhunt.admin")) {
 			
-			player.sendMessage(RED + "You don't have the permission to do that!");
+			playerHandle.sendMessage(RED + "You don't have the permission to do that!");
 			return true;
 		}
 		
 		if (game.getState() == GameState.RUNNING || game.getState() == GameState.GAME_OVER) {
-			player.sendMessage(RED + "That game has already been started!");
+			playerHandle.sendMessage(RED + "That game has already been started!");
 			return true;
 		}
 		
 		String message = GameManager.startGame(game);
-		player.sendMessage(message);
+		playerHandle.sendMessage(message);
 	
 		return true;
 	}

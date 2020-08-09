@@ -1,18 +1,20 @@
-package me.steeric.manhunt.managing;
+package me.steeric.manhunt.game.managing;
 
 import static net.md_5.bungee.api.ChatColor.AQUA;
 import static net.md_5.bungee.api.ChatColor.RED;
 import static net.md_5.bungee.api.ChatColor.WHITE;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import me.steeric.manhunt.game.players.AbstractManhuntPlayer;
+import me.steeric.manhunt.game.players.Hunter;
+import me.steeric.manhunt.game.players.Runner;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import me.steeric.manhunt.game.Game;
-import me.steeric.manhunt.game.Manhunter;
-import me.steeric.manhunt.game.Manhunter.PlayerType;
 import me.steeric.manhunt.game.data.PreGame;
 import me.steeric.manhunt.game.data.PreJoin;
 import me.steeric.manhunt.game.data.WorldSet;
@@ -43,12 +45,12 @@ public class GameManager {
 		
 	}
 	
-	public static void deleteGame(Game game, Player player) {
+	public static void deleteGame(Game game, Player playerHandle) {
 				
-		for (Manhunter mh : game.getPlayers()) {
-			mh.restoreData();
+		for (AbstractManhuntPlayer player : game.getManhuntPlayers()) {
+			player.restoreData();
 
-			Player playerHandle = Bukkit.getPlayer(mh.getPlayer());
+			Player gamePlayerHandle = player.getPlayerHandle();
 			if (playerHandle != null)
 				playerHandle.sendMessage(AQUA + "Teleporting you to your location before the game started!");
 
@@ -57,7 +59,7 @@ public class GameManager {
 		if (game.hasCreatedWorlds()) WorldManager.deleteGameWorlds(game);
 		
 		games.remove(game);
-		if (player != null) player.sendMessage(AQUA + "Game deleted successfully!");
+		if (playerHandle != null) playerHandle.sendMessage(AQUA + "Game deleted successfully!");
 	}
 	
 	public static PreGame findPreGame(UUID creator) {
@@ -85,7 +87,7 @@ public class GameManager {
 		return ChatColor.AQUA + "Game started!";
 	}
 	
-	public static void joinGame(Player player, PlayerType type, String name) {
+	/* public static void joinGame(Player player, PlayerType type, String name) {
 		
 		Game game = findGame(name);
 				
@@ -94,7 +96,6 @@ public class GameManager {
 		// ManhuntCommand.onCommand handles joins by command /manhunt join
 
 		if (game == null) return;
-		
 		if (!game.addPlayer(player, type)) return;
 		
 		game.getPreJoins().remove(new PreJoin(player.getUniqueId(), game));
@@ -102,12 +103,17 @@ public class GameManager {
 		Player adminHandle = Bukkit.getPlayer(game.getAdmin());
 		if (adminHandle != null && !player.equals(adminHandle))
 			adminHandle.sendMessage(ChatColor.WHITE + player.getName() + ChatColor.AQUA + " [" + type.toString().substring(0, 1).toUpperCase() + "] joined your game!");
-	}
+	} Ä/*/
 	
-	public static boolean hasJoined(Player player, Game game) { // used by ManhuntCommand.onCommand to check if player has already joined a game
-		
-		for (Manhunter p : game.getPlayers()) {
-			if (p.getPlayer().equals(player.getUniqueId())) return true;
+	public static boolean hasJoined(Player playerHandle, Game game) { // used by ManhuntCommand.onCommand to check if player has already joined a game
+
+		UUID playerId;
+		for (AbstractManhuntPlayer player : game.getManhuntPlayers()) {
+
+			playerId = player.getPlayerId();
+
+			if (playerId.equals(playerHandle.getUniqueId()))
+				return true;
 		}
 		
 		return false;
@@ -136,60 +142,65 @@ public class GameManager {
 		return null;
 	}
 	
-	public static String changeTeams(Player player, Game game, PlayerType type) {
+	public static <T extends AbstractManhuntPlayer> String changeTeams(Player playerHandle, Game game, Class<T> team) {
 			
-		ArrayList<Manhunter> runners = game.getRunners();
-		ArrayList<Manhunter> hunters = game.getHunters();
-		ArrayList<Manhunter> players = game.getPlayers();
+		List<Runner> runners = game.getRunners();
+		List<Hunter> hunters = game.getHunters();
+		List<AbstractManhuntPlayer> players = game.getManhuntPlayers();
 		
-		if (type == PlayerType.RUNNER) {
+		if (team == Runner.class) {
 
-			for (Manhunter runner : runners) {
-				if (runner.getPlayer().equals(player.getUniqueId())) {
+			UUID playerId;
+			for (Runner runner : runners) {
+
+				playerId = runner.getPlayerId();
+				if (playerId == null)
+					continue;
+
+				if (playerId.equals(playerHandle.getUniqueId())) {
 					return RED + "You already are a runner!";
 				}
 			}
 			
-			Manhunter newPlayer = new Manhunter(player, Manhunter.PlayerType.RUNNER, game);
-			runners.add(newPlayer);
+			Runner runner = new Runner(playerHandle, game);
+			runners.add(runner);
 			
 			int index = 0;
-			
+
 			for (int i = 0; i < hunters.size(); i++) {
-				if (hunters.get(i).getPlayer().equals(player.getUniqueId())) {
+				if (hunters.get(i).getPlayerId().equals(playerHandle.getUniqueId())) {
 					index = i;
 					break;
 				}
 			}
-			
+
 			hunters.remove(index);
 			
 			for (int i = 0; i < players.size(); i++) {
-				if (players.get(i).getPlayer().equals(player.getUniqueId())) {
+				if (players.get(i).getPlayerId().equals(playerHandle.getUniqueId())) {
 					index = i;
 					break;
 				}
 			}
 			
 			players.remove(index);
-			players.add(newPlayer);
-			
-			
-		} else {
+			players.add(runner);
 
-			for (Manhunter hunter : hunters) {
-				if (hunter.getPlayer().equals(player.getUniqueId())) {
+		} else if (team == Hunter.class) {
+
+			for (Hunter hunter : hunters) {
+				if (hunter.getPlayerId().equals(playerHandle.getUniqueId())) {
 					return RED + "You already are a hunter!";
 				}
 			}
 			
-			Manhunter newPlayer = new Manhunter(player, Manhunter.PlayerType.HUNTER, game);
-			hunters.add(newPlayer);
+			Hunter hunter = new Hunter(playerHandle, game);
+			hunters.add(hunter);
 			
 			int index = 0;
 			
 			for (int i = 0; i < runners.size(); i++) {
-				if (runners.get(i).getPlayer().equals(player.getUniqueId())) {
+				if (runners.get(i).getPlayerId().equals(playerHandle.getUniqueId())) {
 					index = i;
 					break;
 				}
@@ -198,29 +209,28 @@ public class GameManager {
 			runners.remove(index);
 			
 			for (int i = 0; i < players.size(); i++) {
-				if (players.get(i).getPlayer().equals(player.getUniqueId())) {
+				if (players.get(i).getPlayerId().equals(playerHandle.getUniqueId())) {
 					index = i;
 					break;
 				}
 			}
 			
 			players.remove(index);
-			players.add(newPlayer);
+			players.add(hunter);
 			
 		}
 		
-		return AQUA + "You are now a " + type + "!";
+		return AQUA + "You are now a " + team.getSimpleName().toLowerCase() + "!";
 	}
 
-	public static Game inGame(Player player) {
+	public static Game inGame(Player playerHandle) {
 	
 		for (Game game : games) {
-			for (Manhunter p : game.getPlayers()) {
-				if (p.getPlayer().equals(player.getUniqueId())) return game;
+			for (AbstractManhuntPlayer player : game.getManhuntPlayers()) {
+				if (player.getPlayerId().equals(playerHandle.getUniqueId())) return game;
 			}
 		}
 		
 		return null;
-		
 	}
 }

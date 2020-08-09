@@ -11,7 +11,7 @@ import org.bukkit.entity.Player;
 import me.steeric.manhunt.commands.GameCommand;
 import me.steeric.manhunt.game.Game;
 import me.steeric.manhunt.game.Game.GameState;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.GameManager;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -20,7 +20,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 public class ListCommand implements GameCommand {
 	
 	@Override
-	public boolean execute(Player player) {
+	public boolean execute(Player playerHandle) {
 		
 		List<Game> games = GameManager.games;
 		List<TextComponent> list = new ArrayList<>();
@@ -76,7 +76,7 @@ public class ListCommand implements GameCommand {
 			listArr[i] = list.get(i);
 		}
 		
-		player.spigot().sendMessage(listArr);
+		playerHandle.spigot().sendMessage(listArr);
 		
 		return true;
 	}

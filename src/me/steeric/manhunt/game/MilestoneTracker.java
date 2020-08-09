@@ -14,6 +14,9 @@ import static org.bukkit.Material.STONE_SWORD;
 import java.util.EnumMap;
 import java.util.Map;
 
+import me.steeric.manhunt.game.players.AbstractManhuntPlayer;
+import me.steeric.manhunt.game.players.Hunter;
+import me.steeric.manhunt.game.players.Runner;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -41,9 +44,8 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MerchantRecipe;
 
-import me.steeric.manhunt.game.Manhunter.PlayerType;
 import me.steeric.manhunt.game.data.MilestoneProgress.Milestone;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.GameManager;
 
 public class MilestoneTracker implements Listener {
 	
@@ -88,7 +90,7 @@ public class MilestoneTracker implements Listener {
 		return milestones;
 	}
 	
-	public void trackItems(Material itemType, Manhunter player, Game game) {
+	public void trackItems(Material itemType, AbstractManhuntPlayer player, Game game) {
 		
 		Milestone milestone = this.itemMilestones.get(itemType);
 		
@@ -106,8 +108,8 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mhplayer = game.findPlayer(player);		
-		trackItems(event.getItem().getItemStack().getType(), mhplayer, game);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		trackItems(event.getItem().getItemStack().getType(), manhuntPlayer, game);
 	}
 	
 	@EventHandler
@@ -120,8 +122,8 @@ public class MilestoneTracker implements Listener {
 		if (!(event.getRightClicked() instanceof Villager)) return;
 		
 		Villager villager = (Villager) event.getRightClicked();
-		Manhunter mh = game.findPlayer(player);
-		mh.getMilestoneProgress().setTrader(villager);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		manhuntPlayer.getMilestoneProgress().setTrader(villager);
 	}
 	
 	@EventHandler
@@ -134,9 +136,9 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mh = game.findPlayer(player);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
 		
-		if (mh.getMilestoneProgress().getTrader() != null) mh.getMilestoneProgress().setTrader(null);
+		if (manhuntPlayer.getMilestoneProgress().getTrader() != null) manhuntPlayer.getMilestoneProgress().setTrader(null);
 	}
 	
 	@EventHandler
@@ -149,12 +151,12 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mh = game.findPlayer(player);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
 		
-		if (mh.getMilestoneProgress().hasMilestone(Milestone.TRAGE_WITH_VILLAGER)) return;
-		if (mh.getMilestoneProgress().getTrader() == null) return;
+		if (manhuntPlayer.getMilestoneProgress().hasMilestone(Milestone.TRAGE_WITH_VILLAGER)) return;
+		if (manhuntPlayer.getMilestoneProgress().getTrader() == null) return;
 		
-		Villager villager = mh.getMilestoneProgress().getTrader();
+		Villager villager = manhuntPlayer.getMilestoneProgress().getTrader();
 		ItemStack item = event.getCurrentItem();
 		
 		if (item == null) return;
@@ -162,7 +164,7 @@ public class MilestoneTracker implements Listener {
 		for (MerchantRecipe r : villager.getRecipes()) {
 			
 			if (item.equals(r.getResult())) {
-				awardMilestone(mh, Milestone.TRAGE_WITH_VILLAGER, game);
+				awardMilestone(manhuntPlayer, Milestone.TRAGE_WITH_VILLAGER, game);
 				return;
 			}
 		}
@@ -178,8 +180,8 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mh = game.findPlayer(player);
-		awardMilestone(mh, Milestone.TAME_ANIMALS, game);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		awardMilestone(manhuntPlayer, Milestone.TAME_ANIMALS, game);
 	}
 	
 	@EventHandler
@@ -195,8 +197,8 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mh = game.findPlayer(player);
-		awardMilestone(mh, Milestone.GET_LAVA, game);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		awardMilestone(manhuntPlayer, Milestone.GET_LAVA, game);
 	}
 	
 	@EventHandler
@@ -209,8 +211,8 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mhplayer = game.findPlayer(player);
-		trackItems(event.getRecipe().getResult().getType(), mhplayer, game);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		trackItems(event.getRecipe().getResult().getType(), manhuntPlayer, game);
 	}
 	
 	@EventHandler
@@ -223,12 +225,12 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mhplayer = game.findPlayer(player);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
 		ItemStack item = event.getCurrentItem();
 		
 		if (item == null) return;
 		
-		trackItems(item.getType(), mhplayer, game);
+		trackItems(item.getType(), manhuntPlayer, game);
 	}
 	
 	@EventHandler
@@ -239,8 +241,8 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mhplayer = game.findPlayer(player);
-		awardMilestone(mhplayer, Milestone.ENCHANTER, game);
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		awardMilestone(manhuntPlayer, Milestone.ENCHANTER, game);
 	}
 	
 	@EventHandler
@@ -259,9 +261,9 @@ public class MilestoneTracker implements Listener {
 			if (item == null) return;
 			
 			Material itemType = item.getType();
-			Manhunter mhplayer = game.findPlayer(player);
+			AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
 			
-			if (itemType == Material.ENDER_EYE) awardMilestone(mhplayer, Milestone.THROW_ENDER_EYE, game);
+			if (itemType == Material.ENDER_EYE) awardMilestone(manhuntPlayer, Milestone.THROW_ENDER_EYE, game);
 		}
 	}
 	
@@ -275,13 +277,13 @@ public class MilestoneTracker implements Listener {
 		
 		if (event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
 			
-			Manhunter mhplayer = game.findPlayer(player);
-			awardMilestone(mhplayer, Milestone.ENTER_NETHER, game);
+			AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+			awardMilestone(manhuntPlayer, Milestone.ENTER_NETHER, game);
 		
 		} else if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
 			
-			Manhunter mhplayer = game.findPlayer(player);
-			awardMilestone(mhplayer, Milestone.ENTER_THE_END, game);
+			AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+			awardMilestone(manhuntPlayer, Milestone.ENTER_THE_END, game);
 		}
 	}
 	
@@ -295,8 +297,8 @@ public class MilestoneTracker implements Listener {
 		
 		if (game == null) return;
 		
-		Manhunter mhplayer = game.findPlayer(player);
-		if (mhplayer.getMilestoneProgress().hasMilestone(Milestone.FIND_FORTRESS)) return;
+		AbstractManhuntPlayer manhuntPlayer = game.findPlayer(player);
+		if (manhuntPlayer.getMilestoneProgress().hasMilestone(Milestone.FIND_FORTRESS)) return;
 		
 		World world = player.getWorld();
 		Location loc = player.getLocation();
@@ -325,7 +327,7 @@ public class MilestoneTracker implements Listener {
 			}
 
 			if (1.0 * bricks / (air + bricks) >= 1.0/3.0 && isInFortress(loc))
-				awardMilestone(mhplayer, Milestone.FIND_FORTRESS, game);
+				awardMilestone(manhuntPlayer, Milestone.FIND_FORTRESS, game);
 		}
 	}
 	
@@ -338,18 +340,18 @@ public class MilestoneTracker implements Listener {
 		return structureLoc != null && structureLoc.distanceSquared(location) <= Math.pow(120, 2);
 	}
 	
-	private static void awardMilestone(Manhunter mhplayer, Milestone milestone, Game game) {
+	private static void awardMilestone(AbstractManhuntPlayer manhuntPlayer, Milestone milestone, Game game) {
 		
-		if (!mhplayer.getMilestoneProgress().hasMilestone(milestone)) {
+		if (!manhuntPlayer.getMilestoneProgress().hasMilestone(milestone)) {
 			
-			mhplayer.getMilestoneProgress().awardMilestone(milestone);
+			manhuntPlayer.getMilestoneProgress().awardMilestone(milestone);
 			
-			game.notifyTeam(ChatColor.GREEN + mhplayer.toString() + "" + milestone, mhplayer.getType());
+			game.notifyTeam(ChatColor.GREEN + manhuntPlayer.toString() + "" + milestone, manhuntPlayer.getClass());
 			
-			if (mhplayer.getType() == PlayerType.HUNTER)
-				game.notifyTeam(ChatColor.RED + mhplayer.toString() + "" + milestone, PlayerType.RUNNER);
-			else if (mhplayer.getType() == PlayerType.RUNNER)
-				game.notifyTeam(ChatColor.RED + mhplayer.toString() + "" + milestone, PlayerType.HUNTER);
+			if (manhuntPlayer instanceof Hunter)
+				game.notifyTeam(ChatColor.RED + manhuntPlayer.toString() + "" + milestone, Runner.class);
+			else if (manhuntPlayer instanceof Runner)
+				game.notifyTeam(ChatColor.RED + manhuntPlayer.toString() + "" + milestone, Hunter.class);
 			
 		}
 	}

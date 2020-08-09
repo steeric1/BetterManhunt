@@ -1,4 +1,4 @@
-package me.steeric.manhunt.managing;
+package me.steeric.manhunt.game.managing;
 
 import java.io.File;
 import java.util.List;

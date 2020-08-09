@@ -10,8 +10,8 @@ import me.steeric.manhunt.commands.TabHandler;
 import me.steeric.manhunt.game.Game;
 import me.steeric.manhunt.game.MilestoneTracker;
 import me.steeric.manhunt.game.PlayerTracking;
-import me.steeric.manhunt.managing.ChatManager;
-import me.steeric.manhunt.managing.GameManager;
+import me.steeric.manhunt.game.managing.ChatManager;
+import me.steeric.manhunt.game.managing.GameManager;
 
 public class Manhunt extends JavaPlugin {
 	

@@ -3,7 +3,7 @@ package me.steeric.manhunt.game.data;
 import org.bukkit.GameRule;
 import org.bukkit.World;
 
-import me.steeric.manhunt.managing.WorldManager;
+import me.steeric.manhunt.game.managing.WorldManager;
 
 public class WorldSet {
 	
